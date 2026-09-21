@@ -97,11 +97,7 @@ model Member {
   phone    String @unique
 
   groupId String
-  group   Group  @relation(
-    fields: [groupId],
-    references: [id],
-    onDelete: Restrict
-  )
+  group Group @relation(fields: [groupId], references: [id], onDelete: Restrict)
 
   pledges       Pledge[]
   notifications SmsNotification[]
@@ -157,17 +153,9 @@ model Pledge {
 
   status PledgeStatus @default(PENDING)
 
-  member Member @relation(
-    fields: [memberId],
-    references: [id],
-    onDelete: Restrict
-  )
+  member Member @relation(fields: [memberId], references: [id], onDelete: Restrict)
 
-  campaign Campaign @relation(
-    fields: [campaignId],
-    references: [id],
-    onDelete: Restrict
-  )
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Restrict)
 
   collections Collection[]
 
@@ -210,17 +198,9 @@ model Collection {
 
   recordedById String
 
-  pledge Pledge @relation(
-    fields: [pledgeId],
-    references: [id],
-    onDelete: Restrict
-  )
+  pledge Pledge @relation(fields: [pledgeId], references: [id], onDelete: Restrict)
 
-  recordedBy User @relation(
-    fields: [recordedById],
-    references: [id],
-    onDelete: Restrict
-  )
+  recordedBy User @relation(fields: [recordedById], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -255,11 +235,7 @@ model SmsNotification {
   // Useful if failed SMS messages can be retried.
   retryCount Int @default(0)
 
-  member Member @relation(
-    fields: [memberId],
-    references: [id],
-    onDelete: Restrict
-  )
+  member Member @relation(fields: [memberId], references: [id], onDelete: Restrict)
 
   createdAt DateTime  @default(now())
   sentAt    DateTime?
