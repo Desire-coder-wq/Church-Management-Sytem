@@ -1,0 +1,15 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+enum Role { ADMIN STAFF }
+enum CampaignStatus { ACTIVE COMPLETED CLOSED }
+enum PledgeStatus { PENDING PARTIALLY_PAID PAID OVERDUE }
+enum PaymentMethod { CASH MOBILE_MONEY BANK_TRANSFER OTHER }
+enum SmsType { PLEDGE_CREATED PAYMENT_RECEIVED PAYMENT_REMINDER FULLY_PAID }
+enum SmsStatus { SENT FAILED }
+model User { id String @id @default(cuid()) email String @unique passwordHash String role Role @default(STAFF) createdAt DateTime @default(now()) }
+model Group { id String @id @default(cuid()) name String @unique members Member[] }
+model Member { id String @id @default(cuid()) fullName String phone String @unique groupId String group Group @relation(fields:[groupId],references:[id]) pledges Pledge[] notifications SmsNotification[] createdAt DateTime @default(now()) }
+model Campaign { id String @id @default(cuid()) name String @unique description String? targetAmount Decimal @db.Decimal(14,2) startDate DateTime endDate DateTime status CampaignStatus @default(ACTIVE) pledges Pledge[] }
+model Pledge { id String @id @default(cuid()) memberId String campaignId String amount Decimal @db.Decimal(14,2) dueDate DateTime status PledgeStatus @default(PENDING) member Member @relation(fields:[memberId],references:[id]) campaign Campaign @relation(fields:[campaignId],references:[id]) collections Collection[] @@unique([memberId,campaignId]) }
+model Collection { id String @id @default(cuid()) pledgeId String amount Decimal @db.Decimal(14,2) paymentDate DateTime @default(now()) method PaymentMethod referenceNumber String @unique idempotencyKey String @unique pledge Pledge @relation(fields:[pledgeId],references:[id]) }
+model SmsNotification { id String @id @default(cuid()) memberId String phone String message String type SmsType status SmsStatus providerId String? sentAt DateTime @default(now()) member Member @relation(fields:[memberId],references:[id]) }
