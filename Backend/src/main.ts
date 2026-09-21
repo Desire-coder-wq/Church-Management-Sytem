@@ -1,13 +1,67 @@
-import { BadRequestException, Body, Controller, Get, Injectable, Module, Post, UseGuards, ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core'; import { JwtModule, JwtService } from '@nestjs/jwt'; import { PassportModule } from '@nestjs/passport'; import { AuthGuard } from '@nestjs/passport'; import { PassportStrategy } from '@nestjs/passport'; import { ExtractJwt, Strategy } from 'passport-jwt'; import { PrismaClient, PledgeStatus, SmsStatus, SmsType } from '@prisma/client'; import { IsDateString, IsEmail, IsEnum, IsNumber, IsPhoneNumber, IsString, Min, MinLength } from 'class-validator'; import helmet from 'helmet'; import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'; import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-@Injectable() class Prisma extends PrismaClient {}
-class LoginDto { @IsEmail() email!:string; @IsString() @MinLength(8) password!:string }
-class MemberDto { @IsString() @MinLength(2) fullName!:string; @IsPhoneNumber('UG') phone!:string; @IsString() group!:string }
-class CampaignDto { @IsString() name!:string; @IsNumber() @Min(1) targetAmount!:number; @IsDateString() startDate!:string; @IsDateString() endDate!:string; @IsString() description?:string }
-class PledgeDto { @IsString() memberId!:string; @IsString() campaignId!:string; @IsNumber() @Min(1) amount!:number; @IsDateString() dueDate!:string }
-class PaymentDto { @IsString() pledgeId!:string; @IsNumber() @Min(1) amount!:number; @IsDateString() paymentDate!:string; @IsEnum(['CASH','MOBILE_MONEY','BANK_TRANSFER','OTHER']) method!:any; @IsString() referenceNumber!:string; @IsString() @MinLength(8) idempotencyKey!:string }
-@Injectable() class JwtStrategy extends PassportStrategy(Strategy){constructor(){super({jwtFromRequest:ExtractJwt.fromAuthHeaderAsBearerToken(),secretOrKey:process.env.JWT_SECRET})}validate(p:any){return p}}
-@Injectable() class Service { constructor(private db:Prisma){} sum(p:any){const paid=p.collections.reduce((s:number,c:any)=>s+Number(c.amount),0);return {...p,amount:Number(p.amount),paid,balance:Number(p.amount)-paid,status:paid===Number(p.amount)?'PAID':paid?'PARTIALLY_PAID':new Date(p.dueDate)<new Date()?'OVERDUE':p.status}} async notify(member:any,message:string,type:SmsType){return this.db.smsNotification.create({data:{memberId:member.id,phone:member.phone,message,type,status:SmsStatus.SENT}})} }
-@Controller() @UseGuards(AuthGuard('jwt'),ThrottlerGuard) class Api {constructor(private db:Prisma,private jwt:JwtService,private service:Service){} @Post('auth/signup') async signup(@Body()d:LoginDto){const bcrypt=await import('bcrypt');const user=await this.db.user.create({data:{email:d.email,passwordHash:await bcrypt.hash(d.password,12),role:'ADMIN'}});return {accessToken:this.jwt.sign({sub:user.id,role:user.role})}} @Post('auth/login') async login(@Body()d:LoginDto){const bcrypt=await import('bcrypt');const u=await this.db.user.findUnique({where:{email:d.email}});if(!u||!await bcrypt.compare(d.password,u.passwordHash))throw new BadRequestException('Invalid credentials');return {accessToken:this.jwt.sign({sub:u.id,role:u.role})}} @Get('members') members(){return this.db.member.findMany({include:{group:true}})} @Post('members') member(@Body()d:MemberDto){return this.db.member.create({data:{fullName:d.fullName,phone:d.phone,group:{connectOrCreate:{where:{name:d.group},create:{name:d.group}}}}})} @Get('campaigns') campaigns(){return this.db.campaign.findMany()} @Post('campaigns') campaign(@Body()d:CampaignDto){if(new Date(d.endDate)<=new Date(d.startDate))throw new BadRequestException('End date must be after start date');return this.db.campaign.create({data:{...d,startDate:new Date(d.startDate),endDate:new Date(d.endDate)}})} @Get('pledges') async pledges(){return (await this.db.pledge.findMany({include:{member:{include:{group:true}},campaign:true,collections:true}})).map(p=>this.service.sum(p))} @Post('pledges') async pledge(@Body()d:PledgeDto){const p=await this.db.pledge.create({data:{...d,dueDate:new Date(d.dueDate)},include:{member:true,campaign:true,collections:true}});await this.service.notify(p.member,`Your pledge of UGX ${p.amount} towards ${p.campaign.name} has been recorded.`,SmsType.PLEDGE_CREATED);return this.service.sum(p)} @Post('collections') async collection(@Body()d:PaymentDto){const old=await this.db.collection.findFirst({where:{OR:[{referenceNumber:d.referenceNumber},{idempotencyKey:d.idempotencyKey}]}});if(old)return old;const p=await this.db.pledge.findUnique({where:{id:d.pledgeId},include:{member:true,campaign:true,collections:true}});if(!p)throw new BadRequestException('Pledge not found');const paid=p.collections.reduce((s,c)=>s+Number(c.amount),0);if(paid+d.amount>Number(p.amount))throw new BadRequestException('Payment exceeds pledge balance');const c=await this.db.$transaction(async tx=>{const x=await tx.collection.create({data:{...d,paymentDate:new Date(d.paymentDate)}});await tx.pledge.update({where:{id:p.id},data:{status:paid+d.amount===Number(p.amount)?PledgeStatus.PAID:PledgeStatus.PARTIALLY_PAID}});return x});await this.service.notify(p.member,`We received UGX ${d.amount}. Remaining balance: UGX ${Number(p.amount)-paid-d.amount}.`,SmsType.PAYMENT_RECEIVED);return c} @Get('dashboard') async dashboard(){const ps=await this.pledges(),cs=await this.db.campaign.findMany({where:{status:'ACTIVE'}}),members=await this.db.member.count();const pledged=ps.reduce((s,p)=>s+p.amount,0),paid=ps.reduce((s,p)=>s+p.paid,0),target=cs.reduce((s,c)=>s+Number(c.targetAmount),0);return {members,activeCampaigns:cs.length,target,pledged,paid,outstanding:pledged-paid,remainingToTarget:target-paid}} @Get('reports') async reports(){const rows=await this.pledges();return {rows,totals:{pledged:rows.reduce((s,p)=>s+p.amount,0),paid:rows.reduce((s,p)=>s+p.paid,0),outstanding:rows.reduce((s,p)=>s+p.balance,0)}}} @Get('notifications') notifications(){return this.db.smsNotification.findMany({include:{member:true},orderBy:{sentAt:'desc'}})} }
-@Module({imports:[PassportModule,JwtModule.register({secret:process.env.JWT_SECRET,signOptions:{expiresIn:'8h'}}),ThrottlerModule.forRoot([{ttl:60000,limit:100}])],controllers:[Api],providers:[Prisma,Service,JwtStrategy]}) class App{}
-async function bootstrap(){const app=await NestFactory.create(App);app.use(helmet());app.enableCors({origin:process.env.FRONTEND_URL??'http://localhost:5173'});app.setGlobalPrefix('api');app.useGlobalPipes(new ValidationPipe({whitelist:true,forbidNonWhitelisted:true,transform:true}));SwaggerModule.setup('api/docs',app,SwaggerModule.createDocument(app,new DocumentBuilder().setTitle('Church Pledge API').addBearerAuth().build()));await app.listen(Number(process.env.PORT??3000))} bootstrap();
+import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
+
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  // Security headers
+  app.use(helmet());
+
+  // API prefix
+  app.setGlobalPrefix('api');
+
+  // CORS
+  app.enableCors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true,
+  });
+
+  // Global validation
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  // Swagger configuration
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Church Pledge Management API')
+    .setDescription(
+      'REST API documentation for the Church Pledge Management System',
+    )
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'Authorization',
+        in: 'header',
+      },
+      'access-token',
+    )
+    .build();
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+
+  SwaggerModule.setup('api/docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
+
+  const port = Number(process.env.PORT) || 3000;
+
+  await app.listen(port);
+
+  console.log(`API running on http://localhost:${port}/api`);
+  console.log(`Swagger docs: http://localhost:${port}/api/docs`);
+}
+
+bootstrap();

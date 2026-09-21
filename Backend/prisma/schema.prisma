@@ -1,15 +1,271 @@
-generator client { provider = "prisma-client-js" }
-datasource db { provider = "postgresql" url = env("DATABASE_URL") }
-enum Role { ADMIN STAFF }
-enum CampaignStatus { ACTIVE COMPLETED CLOSED }
-enum PledgeStatus { PENDING PARTIALLY_PAID PAID OVERDUE }
-enum PaymentMethod { CASH MOBILE_MONEY BANK_TRANSFER OTHER }
-enum SmsType { PLEDGE_CREATED PAYMENT_RECEIVED PAYMENT_REMINDER FULLY_PAID }
-enum SmsStatus { SENT FAILED }
-model User { id String @id @default(cuid()) email String @unique passwordHash String role Role @default(STAFF) createdAt DateTime @default(now()) }
-model Group { id String @id @default(cuid()) name String @unique members Member[] }
-model Member { id String @id @default(cuid()) fullName String phone String @unique groupId String group Group @relation(fields:[groupId],references:[id]) pledges Pledge[] notifications SmsNotification[] createdAt DateTime @default(now()) }
-model Campaign { id String @id @default(cuid()) name String @unique description String? targetAmount Decimal @db.Decimal(14,2) startDate DateTime endDate DateTime status CampaignStatus @default(ACTIVE) pledges Pledge[] }
-model Pledge { id String @id @default(cuid()) memberId String campaignId String amount Decimal @db.Decimal(14,2) dueDate DateTime status PledgeStatus @default(PENDING) member Member @relation(fields:[memberId],references:[id]) campaign Campaign @relation(fields:[campaignId],references:[id]) collections Collection[] @@unique([memberId,campaignId]) }
-model Collection { id String @id @default(cuid()) pledgeId String amount Decimal @db.Decimal(14,2) paymentDate DateTime @default(now()) method PaymentMethod referenceNumber String @unique idempotencyKey String @unique pledge Pledge @relation(fields:[pledgeId],references:[id]) }
-model SmsNotification { id String @id @default(cuid()) memberId String phone String message String type SmsType status SmsStatus providerId String? sentAt DateTime @default(now()) member Member @relation(fields:[memberId],references:[id]) }
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ======================================================
+// ENUMS
+// ======================================================
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum CampaignStatus {
+  ACTIVE
+  COMPLETED
+  CLOSED
+}
+
+enum PledgeStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+}
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY
+  BANK_TRANSFER
+  OTHER
+}
+
+enum SmsType {
+  PLEDGE_CREATED
+  PAYMENT_RECEIVED
+  PAYMENT_REMINDER
+  FULLY_PAID
+}
+
+enum SmsStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+// ======================================================
+// USERS
+// ======================================================
+
+model User {
+  id           String   @id @default(cuid())
+  fullName     String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(STAFF)
+  isActive     Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  collections Collection[]
+
+  @@index([email])
+  @@index([role])
+}
+
+// ======================================================
+// CHURCH GROUPS
+// ======================================================
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+
+  members Member[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+}
+
+// ======================================================
+// MEMBERS
+// ======================================================
+
+model Member {
+  id       String @id @default(cuid())
+  fullName String
+  phone    String @unique
+
+  groupId String
+  group   Group  @relation(
+    fields: [groupId],
+    references: [id],
+    onDelete: Restrict
+  )
+
+  pledges       Pledge[]
+  notifications SmsNotification[]
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fullName])
+  @@index([phone])
+  @@index([groupId])
+}
+
+// ======================================================
+// PLEDGE CAMPAIGNS
+// ======================================================
+
+model Campaign {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String?
+
+  targetAmount Decimal @db.Decimal(14, 2)
+
+  startDate DateTime
+  endDate   DateTime
+
+  status CampaignStatus @default(ACTIVE)
+
+  pledges Pledge[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+// ======================================================
+// PLEDGES
+// ======================================================
+
+model Pledge {
+  id String @id @default(cuid())
+
+  memberId   String
+  campaignId String
+
+  amount  Decimal  @db.Decimal(14, 2)
+  dueDate DateTime
+
+  status PledgeStatus @default(PENDING)
+
+  member Member @relation(
+    fields: [memberId],
+    references: [id],
+    onDelete: Restrict
+  )
+
+  campaign Campaign @relation(
+    fields: [campaignId],
+    references: [id],
+    onDelete: Restrict
+  )
+
+  collections Collection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One member gets one pledge per campaign.
+  // Multiple payments can then be made against that pledge.
+  @@unique([memberId, campaignId])
+
+  @@index([memberId])
+  @@index([campaignId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+// ======================================================
+// COLLECTIONS / PAYMENTS
+// ======================================================
+
+model Collection {
+  id String @id @default(cuid())
+
+  pledgeId String
+
+  amount Decimal @db.Decimal(14, 2)
+
+  paymentDate DateTime @default(now())
+
+  method PaymentMethod
+
+  // Cash payments might not naturally have an external
+  // transaction number, therefore this is optional.
+  referenceNumber String? @unique
+
+  // Protects against duplicate requests/double-clicks.
+  idempotencyKey String @unique
+
+  notes String?
+
+  recordedById String
+
+  pledge Pledge @relation(
+    fields: [pledgeId],
+    references: [id],
+    onDelete: Restrict
+  )
+
+  recordedBy User @relation(
+    fields: [recordedById],
+    references: [id],
+    onDelete: Restrict
+  )
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([pledgeId])
+  @@index([paymentDate])
+  @@index([method])
+  @@index([recordedById])
+}
+
+// ======================================================
+// SMS NOTIFICATIONS
+// ======================================================
+
+model SmsNotification {
+  id String @id @default(cuid())
+
+  memberId String
+
+  phone   String
+  message String
+
+  type   SmsType
+  status SmsStatus @default(PENDING)
+
+  // ID returned by your SMS provider.
+  providerId String?
+
+  // Store provider/API error for debugging failed SMS.
+  failureReason String?
+
+  // Useful if failed SMS messages can be retried.
+  retryCount Int @default(0)
+
+  member Member @relation(
+    fields: [memberId],
+    references: [id],
+    onDelete: Restrict
+  )
+
+  createdAt DateTime  @default(now())
+  sentAt    DateTime?
+
+  @@index([memberId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+}
