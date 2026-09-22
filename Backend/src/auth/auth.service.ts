@@ -1,1 +1,51 @@
-import {ConflictException,Injectable,UnauthorizedException} from '@nestjs/common';import {JwtService} from '@nestjs/jwt';import * as bcrypt from 'bcrypt';import {PrismaService} from '../prisma/prisma.service';@Injectable()export class AuthService{constructor(private prisma:PrismaService,private jwt:JwtService){}async signup(fullName:string,churchName:string,email:string,password:string){if(await this.prisma.user.findUnique({where:{email}}))throw new ConflictException('An account already exists for this email address.');const user=await this.prisma.user.create({data:{fullName,email,passwordHash:await bcrypt.hash(password,12),role:'ADMIN',church:{create:{name:churchName}}},include:{church:true}});return this.issue(user)}async login(email:string,password:string){const user=await this.prisma.user.findUnique({where:{email},include:{church:true}});if(!user||!await bcrypt.compare(password,user.passwordHash))throw new UnauthorizedException('Email or password is incorrect.');if(!user.isActive)throw new UnauthorizedException('This account is inactive. Contact your church administrator.');return this.issue(user)}private issue(user:any){return {accessToken:this.jwt.sign({sub:user.id,email:user.email,role:user.role,churchId:user.churchId}),user:{id:user.id,email:user.email,fullName:user.fullName,role:user.role,churchId:user.churchId,churchName:user.church?.name}}}}
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcryptjs';
+import { PrismaService } from '../prisma/prisma.service';
+
+@Injectable()
+export class AuthService {
+  constructor(private prisma: PrismaService, private jwt: JwtService) {}
+
+  async signup(fullName: string, churchName: string, email: string, password: string) {
+    if (await this.prisma.user.findUnique({ where: { email } })) {
+      throw new ConflictException('An account already exists for this email address.');
+    }
+    const user = await this.prisma.user.create({
+      data: {
+        fullName,
+        email,
+        passwordHash: await bcrypt.hash(password, 12),
+        role: 'ADMIN',
+        church: { create: { name: churchName } },
+      },
+      include: { church: true },
+    });
+    return this.issue(user);
+  }
+
+  async login(email: string, password: string) {
+    const user = await this.prisma.user.findUnique({ where: { email }, include: { church: true } });
+    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+      throw new UnauthorizedException('Email or password is incorrect.');
+    }
+    if (!user.isActive) {
+      throw new UnauthorizedException('This account is inactive. Contact your church administrator.');
+    }
+    return this.issue(user);
+  }
+
+  private issue(user: any) {
+    return {
+      accessToken: this.jwt.sign({ sub: user.id, email: user.email, role: user.role, churchId: user.churchId }),
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        churchId: user.churchId,
+        churchName: user.church?.name,
+      },
+    };
+  }
+}
