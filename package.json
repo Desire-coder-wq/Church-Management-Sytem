@@ -11,9 +11,13 @@
     "test": "npm run test -w Backend"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "concurrently": "^9.1.2"
   },
   "allowScripts": {
     "bcrypt@5.1.1": true
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3"
   }
 }
