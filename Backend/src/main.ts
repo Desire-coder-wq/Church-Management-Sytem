@@ -1,9 +1,9 @@
-import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import helmet from 'helmet';
+import { ValidationPipe } from "@nestjs/common";
+import { NestFactory } from "@nestjs/core";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import helmet from "helmet";
 
-import { AppModule } from './app.module';
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,11 +12,11 @@ async function bootstrap() {
   app.use(helmet());
 
   // API prefix
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix("api");
 
   // CORS
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
     credentials: true,
   });
 
@@ -31,26 +31,26 @@ async function bootstrap() {
 
   // Swagger configuration
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Church Pledge Management API')
+    .setTitle("Church Pledge Management API")
     .setDescription(
-      'REST API documentation for the Church Pledge Management System',
+      "REST API documentation for the Church Pledge Management System",
     )
-    .setVersion('1.0')
+    .setVersion("1.0")
     .addBearerAuth(
       {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'Authorization',
-        in: 'header',
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        name: "Authorization",
+        in: "header",
       },
-      'access-token',
+      "access-token",
     )
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
 
-  SwaggerModule.setup('api/docs', app, document, {
+  SwaggerModule.setup("api/docs", app, document, {
     swaggerOptions: {
       persistAuthorization: true,
     },

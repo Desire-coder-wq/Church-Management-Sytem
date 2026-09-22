@@ -6,7 +6,7 @@ A secure, responsive system for church staff to manage members, campaigns, pledg
 
 - React, TypeScript and Tailwind CSS
 - NestJS REST API with Swagger
-- Prisma ORM and Supabase PostgreSQL
+- Prisma ORM and Neon PostgreSQL
 - Twilio-ready SMS adapter (mock mode for demonstration)
 
 ## Security
