@@ -1,1 +1,25 @@
-import {Module} from '@nestjs/common';import {ConfigModule} from '@nestjs/config';import {ThrottlerModule} from '@nestjs/throttler';import {AuthModule} from './auth/auth.module';import {ApiController} from './controllers';import {PrismaService,ChurchService,SmsService} from './services';@Module({imports:[ConfigModule.forRoot({isGlobal:true}),ThrottlerModule.forRoot([{ttl:60000,limit:100}]),AuthModule],controllers:[ApiController],providers:[PrismaService,ChurchService,SmsService]})export class AppModule{}
+import { Module } from '@nestjs/common';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { ConfigModule } from '@nestjs/config';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AuthModule } from './auth/auth.module';
+import { PrismaService } from './prisma/prisma.service';
+import { DatabaseErrorsFilter } from './common/database-errors.filter';
+import { MembersController } from './members/members.controller';
+import { CampaignsController } from './campaigns/campaigns.controller';
+import { PledgesController } from './pledges/pledges.controller';
+import { PledgesService } from './pledges/pledges.service';
+import { CollectionsController } from './collections/collections.controller';
+import { CollectionsService } from './collections/collections.service';
+import { DashboardController } from './dashboard/dashboard.controller';
+import { ReportsController } from './reports/reports.controller';
+import { NotificationsController } from './notifications/notifications.controller';
+
+@Module({
+  imports: [ConfigModule.forRoot({ isGlobal: true }), ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]), AuthModule],
+  controllers: [MembersController, CampaignsController, PledgesController, CollectionsController,
+    DashboardController, ReportsController, NotificationsController],
+  providers: [PrismaService, PledgesService, CollectionsService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard }, { provide: APP_FILTER, useClass: DatabaseErrorsFilter }],
+})
+export class AppModule {}
