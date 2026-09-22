@@ -22,10 +22,7 @@ type RecordRow = {
   group?: { name: string };
 };
 type Field = { key: string; label: string; type?: string; optional?: boolean };
-const configs: Record<
-  string,
-  { title: string; singular: string; fields: Field[] }
-> = {
+const configs: Record<string, { title: string; singular: string; fields: Field[] }> = {
   members: {
     title: "Members",
     singular: "member",
@@ -109,6 +106,7 @@ export function RecordsPage({ resource }: { resource: string }) {
   useEffect(() => {
     void load();
   }, [resource, status]);
+
   async function start(row?: RecordRow) {
     setError("");
     setErrors({});
@@ -127,54 +125,36 @@ export function RecordsPage({ resource }: { resource: string }) {
     setOpen(true);
     try {
       if (resource === "pledges") {
-        const [m, c] = await Promise.all([
-          api.get("/members"),
-          api.get("/campaigns"),
-        ]);
+        const [m, c] = await Promise.all([api.get("/members"), api.get("/campaigns")]);
         setMembers(m.data);
-        setCampaigns(
-          c.data.filter((item: RecordRow) => item.status === "ACTIVE"),
-        );
+        setCampaigns(c.data.filter((item: RecordRow) => item.status === "ACTIVE"));
       }
       if (resource === "collections")
-        setPledges(
-          (await api.get("/pledges")).data.filter(
-            (item: RecordRow) => Number(item.balance) > 0,
-          ),
-        );
+        setPledges((await api.get("/pledges")).data.filter((item: RecordRow) => Number(item.balance) > 0));
     } catch (failure) {
       setError(getError(failure));
     }
   }
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
     for (const field of config.fields) {
       const value = form[field.key]?.trim() ?? "";
-      if (!field.optional && !value)
-        next[field.key] = `${field.label} is required.`;
+      if (!field.optional && !value) next[field.key] = `${field.label} is required.`;
       else if (
         field.type === "number" &&
-        (!Number.isFinite(Number(value)) ||
-          Number(value) <= 0 ||
-          !/^\d+(\.\d{1,2})?$/.test(value))
+        (!Number.isFinite(Number(value)) || Number(value) <= 0 || !/^\d+(\.\d{1,2})?$/.test(value))
       )
-        next[field.key] =
-          "Enter an amount greater than zero with at most 2 decimal places.";
+        next[field.key] = "Enter an amount greater than zero with at most 2 decimal places.";
       else if (field.key === "phone" && !/^\+256\d{9}$/.test(value))
         next.phone = "Enter +256 followed by 9 digits.";
-      else if (
-        ["fullName", "group", "name"].includes(field.key) &&
-        value.length < 2
-      )
+      else if (["fullName", "group", "name"].includes(field.key) && value.length < 2)
         next[field.key] = "Enter at least 2 characters.";
     }
     if (form.endDate && form.startDate && form.endDate <= form.startDate)
       next.endDate = "End date must be after start date.";
-    if (
-      form.paymentDate &&
-      form.paymentDate > new Date().toISOString().slice(0, 10)
-    )
+    if (form.paymentDate && form.paymentDate > new Date().toISOString().slice(0, 10))
       next.paymentDate = "Payment date cannot be in the future.";
     const selected = pledges.find((item) => item.id === form.pledgeId);
     if (selected && Number(form.amount) > Number(selected.balance))
@@ -185,10 +165,7 @@ export function RecordsPage({ resource }: { resource: string }) {
     const payload: Record<string, string | number> = {};
     config.fields.forEach((field) => {
       if (form[field.key]?.trim())
-        payload[field.key] =
-          field.type === "number"
-            ? Number(form[field.key])
-            : form[field.key].trim();
+        payload[field.key] = field.type === "number" ? Number(form[field.key]) : form[field.key].trim();
     });
     if (resource === "collections") payload.idempotencyKey = requestId;
     setBusy(true);
@@ -196,9 +173,7 @@ export function RecordsPage({ resource }: { resource: string }) {
       if (editId) await api.patch(`/${resource}/${editId}`, payload);
       else await api.post(`/${resource}`, payload);
       setOpen(false);
-      setSuccess(
-        `${config.singular[0].toUpperCase() + config.singular.slice(1)} saved successfully.`,
-      );
+      setSuccess(`${config.singular[0].toUpperCase() + config.singular.slice(1)} saved successfully.`);
       await load();
     } catch (failure) {
       setError(getError(failure));
@@ -206,6 +181,7 @@ export function RecordsPage({ resource }: { resource: string }) {
       setBusy(false);
     }
   }
+
   async function download(extension: string) {
     try {
       const { data } = await api.get(`/reports/export.${extension}`, {
@@ -223,13 +199,14 @@ export function RecordsPage({ resource }: { resource: string }) {
       setError(getError(failure));
     }
   }
+
   function options(key: string) {
     if (key === "method")
-      return ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "OTHER"].map(
-        (value) => ({ value, label: value.replaceAll("_", " ") }),
-      );
-    const items =
-      key === "memberId" ? members : key === "campaignId" ? campaigns : pledges;
+      return ["CASH", "MOBILE_MONEY", "BANK_TRANSFER", "OTHER"].map((value) => ({
+        value,
+        label: value.replaceAll("_", " "),
+      }));
+    const items = key === "memberId" ? members : key === "campaignId" ? campaigns : pledges;
     return items.map((item) => ({
       value: item.id,
       label:
@@ -238,28 +215,26 @@ export function RecordsPage({ resource }: { resource: string }) {
         `${item.member?.fullName} — ${item.campaign?.name} (${ugx(Number(item.balance))} due)`,
     }));
   }
-  const filtered = rows.filter((row) =>
-    JSON.stringify(row).toLowerCase().includes(search.toLowerCase()),
-  );
+
+  const filtered = rows.filter((row) => JSON.stringify(row).toLowerCase().includes(search.toLowerCase()));
+  const isReadOnly = resource === "notifications" || resource === "reports";
+
   return (
     <>
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
-            Church workspace
-          </p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Church workspace</p>
           <h1 className="text-3xl font-bold">{config.title}</h1>
           <p className="mt-2 text-sm text-muted">
             {resource === "reports"
               ? "Review pledge balances and download your records."
+              : resource === "notifications"
+              ? "View SMS notification history for your church."
               : `Manage your church’s ${config.title.toLowerCase()} in one place.`}
           </p>
         </div>
-        {config.fields.length > 0 && (
-          <button
-            className="btn primary inline-flex items-center gap-2"
-            onClick={() => void start()}
-          >
+        {!isReadOnly && config.fields.length > 0 && (
+          <button className="btn primary inline-flex items-center gap-2" onClick={() => void start()}>
             <Plus size={17} />
             Add {config.singular}
           </button>
@@ -267,11 +242,7 @@ export function RecordsPage({ resource }: { resource: string }) {
         {resource === "reports" && (
           <div className="flex gap-2">
             {["xlsx", "pdf"].map((type) => (
-              <button
-                key={type}
-                className="btn border border-line bg-white inline-flex items-center gap-2"
-                onClick={() => void download(type)}
-              >
+              <button key={type} className="btn border border-line bg-white inline-flex items-center gap-2" onClick={() => void download(type)}>
                 <Download size={16} />
                 {type === "xlsx" ? "Excel" : "PDF"}
               </button>
@@ -279,22 +250,8 @@ export function RecordsPage({ resource }: { resource: string }) {
           </div>
         )}
       </div>
-      {success && (
-        <p
-          role="status"
-          className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-success"
-        >
-          {success}
-        </p>
-      )}
-      {error && (
-        <p
-          role="alert"
-          className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-danger"
-        >
-          {error}
-        </p>
-      )}
+      {success && <p role="status" className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-success">{success}</p>}
+      {error && <p role="alert" className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-danger">{error}</p>}
       <div className="rounded-xl border border-line bg-white">
         <div className="flex flex-wrap items-center gap-3 border-b border-line p-4">
           <Search size={18} className="text-muted" />
@@ -307,14 +264,17 @@ export function RecordsPage({ resource }: { resource: string }) {
           />
           <span className="text-xs text-muted">{filtered.length} records</span>
           {resource === "reports" && (
-            <select
-              aria-label="Filter by status"
-              className="field w-auto"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-            >
+            <select aria-label="Filter by status" className="field w-auto" value={status} onChange={(e) => setStatus(e.target.value)}>
               <option value="">All statuses</option>
               {["PENDING", "PARTIALLY_PAID", "PAID", "OVERDUE"].map((value) => (
+                <option key={value}>{value}</option>
+              ))}
+            </select>
+          )}
+          {resource === "notifications" && (
+            <select aria-label="Filter by status" className="field w-auto" value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="">All statuses</option>
+              {["PENDING", "SENT", "FAILED"].map((value) => (
                 <option key={value}>{value}</option>
               ))}
             </select>
@@ -324,9 +284,7 @@ export function RecordsPage({ resource }: { resource: string }) {
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-muted">
               <tr>
-                <th className="p-4">
-                  {resource === "members" ? "Member" : "Record"}
-                </th>
+                <th className="p-4">{resource === "members" ? "Member" : "Record"}</th>
                 <th className="p-4">Details</th>
                 <th className="p-4">Amount / balance</th>
                 <th className="p-4">Status</th>
@@ -335,26 +293,13 @@ export function RecordsPage({ resource }: { resource: string }) {
             </thead>
             <tbody>
               {filtered.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-t border-line hover:bg-slate-50/70"
-                >
+                <tr key={row.id} className="border-t border-line hover:bg-slate-50/70">
                   <td className="p-4 font-medium">
-                    {row.fullName ??
-                      row.name ??
-                      row.member?.fullName ??
-                      row.pledge?.member?.fullName ??
-                      "Notification"}
+                    {row.fullName ?? row.name ?? row.member?.fullName ?? row.pledge?.member?.fullName ?? "Notification"}
                   </td>
                   <td className="p-4 text-muted">
-                    {row.phone ??
-                      row.campaign?.name ??
-                      row.pledge?.campaign?.name ??
-                      row.message ??
-                      "—"}
-                    {row.group && (
-                      <span className="block text-xs">{row.group.name}</span>
-                    )}
+                    {row.phone ?? row.campaign?.name ?? row.pledge?.campaign?.name ?? row.message ?? "—"}
+                    {row.group && <span className="block text-xs">{row.group.name}</span>}
                   </td>
                   <td className="p-4">
                     {row.balance !== undefined ? (
@@ -364,8 +309,7 @@ export function RecordsPage({ resource }: { resource: string }) {
                           Paid {ugx(row.paid ?? 0)} of {ugx(row.amount ?? 0)}
                         </span>
                       </>
-                    ) : row.amount !== undefined ||
-                      row.targetAmount !== undefined ? (
+                    ) : row.amount !== undefined || row.targetAmount !== undefined ? (
                       ugx(Number(row.amount ?? row.targetAmount))
                     ) : (
                       "—"
@@ -379,11 +323,8 @@ export function RecordsPage({ resource }: { resource: string }) {
                     </span>
                   </td>
                   <td className="p-4">
-                    {resource === "members" && (
-                      <button
-                        className="font-medium text-navy"
-                        onClick={() => void start(row)}
-                      >
+                    {!isReadOnly && resource === "members" && (
+                      <button className="font-medium text-navy" onClick={() => void start(row)}>
                         Edit
                       </button>
                     )}
@@ -398,9 +339,7 @@ export function RecordsPage({ resource }: { resource: string }) {
         ) : (
           !filtered.length && (
             <div className="p-12 text-center">
-              <h2 className="font-semibold">
-                No {config.title.toLowerCase()} yet
-              </h2>
+              <h2 className="font-semibold">No {config.title.toLowerCase()} yet</h2>
               <p className="mt-2 text-sm text-muted">
                 {config.fields.length
                   ? `Add your first ${config.singular} to get started.`
@@ -410,7 +349,7 @@ export function RecordsPage({ resource }: { resource: string }) {
           )
         )}
       </div>
-      {open && (
+      {open && !isReadOnly && (
         <div className="mt-6 rounded-xl border border-line bg-white p-6">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-xl font-semibold">
@@ -420,27 +359,19 @@ export function RecordsPage({ resource }: { resource: string }) {
               <X size={20} />
             </button>
           </div>
-          <form
-            noValidate
-            onSubmit={submit}
-            className="grid gap-5 sm:grid-cols-2"
-          >
+          <form noValidate onSubmit={submit} className="grid gap-5 sm:grid-cols-2">
             {config.fields.map((field) => (
               <div key={field.key}>
                 <label htmlFor={field.key} className="text-sm font-medium">
                   {field.label}
-                  {field.optional && (
-                    <span className="text-muted"> (optional)</span>
-                  )}
+                  {field.optional && <span className="text-muted"> (optional)</span>}
                 </label>
                 {field.type === "select" ? (
                   <select
                     id={field.key}
                     className="field"
                     value={form[field.key] ?? ""}
-                    onChange={(e) =>
-                      setForm({ ...form, [field.key]: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
                   >
                     <option value="">Select {field.label.toLowerCase()}</option>
                     {options(field.key).map((option) => (
@@ -457,24 +388,14 @@ export function RecordsPage({ resource }: { resource: string }) {
                     step={field.type === "number" ? "0.01" : undefined}
                     value={form[field.key] ?? ""}
                     aria-invalid={!!errors[field.key]}
-                    onChange={(e) =>
-                      setForm({ ...form, [field.key]: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, [field.key]: e.target.value })}
                   />
                 )}
-                {errors[field.key] && (
-                  <p className="mt-1 text-xs text-danger">
-                    {errors[field.key]}
-                  </p>
-                )}
+                {errors[field.key] && <p className="mt-1 text-xs text-danger">{errors[field.key]}</p>}
               </div>
             ))}
             <div className="flex justify-end gap-3 border-t border-line pt-5 sm:col-span-2">
-              <button
-                type="button"
-                className="btn border border-line"
-                onClick={() => setOpen(false)}
-              >
+              <button type="button" className="btn border border-line" onClick={() => setOpen(false)}>
                 Cancel
               </button>
               <button disabled={busy} className="btn primary">
