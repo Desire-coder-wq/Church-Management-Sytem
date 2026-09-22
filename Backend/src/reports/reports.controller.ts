@@ -1,19 +1,21 @@
-import { Controller, Get, Query, Req, Res, UseGuards } from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Response } from "express";
-import { Workbook } from "exceljs";
-import PDFDocument = require("pdfkit");
-import { Session, requireChurch } from "../common/session";
-import { PledgesService } from "../pledges/pledges.service";
-import { ReportFilterDto } from "./report-filter.dto";
+import { Controller, Get, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
+import { Workbook } from 'exceljs';
+import PDFDocument = require('pdfkit');
+import { Session, requireChurch } from '../common/session';
+import { PledgesService } from '../pledges/pledges.service';
+import { ReportFilterDto } from './report-filter.dto';
+import { Roles, RolesGuard } from '../common/roles.guard';
 
-@ApiTags("Reports")
-@ApiBearerAuth("access-token")
-@UseGuards(AuthGuard("jwt"))
-@Controller("reports")
+@ApiTags('Reports')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Controller('reports')
 export class ReportsController {
   constructor(private readonly pledges: PledgesService) {}
+  @Roles('ADMIN', 'STAFF')
   @Get() async report(
     @Req() req: { user: Session },
     @Query() filter: ReportFilterDto,
@@ -35,25 +37,26 @@ export class ReportsController {
       },
     };
   }
-  @Get("export.xlsx") async excel(
+  @Roles('ADMIN', 'STAFF')
+  @Get('export.xlsx') async excel(
     @Req() req: { user: Session },
     @Query() filter: ReportFilterDto,
     @Res() res: Response,
   ) {
     const { rows, totals } = await this.report(req, filter);
     const workbook = new Workbook();
-    const sheet = workbook.addWorksheet("Pledges");
-    sheet.addRow(["Church pledge report"]);
+    const sheet = workbook.addWorksheet('Pledges');
+    sheet.addRow(['Church pledge report']);
     sheet.addRow([
-      "Member",
-      "Phone",
-      "Group",
-      "Campaign",
-      "Pledged (UGX)",
-      "Paid (UGX)",
-      "Balance (UGX)",
-      "Due date",
-      "Status",
+      'Member',
+      'Phone',
+      'Group',
+      'Campaign',
+      'Pledged (UGX)',
+      'Paid (UGX)',
+      'Balance (UGX)',
+      'Due date',
+      'Status',
     ]);
     rows.forEach((row) =>
       sheet.addRow([
@@ -69,10 +72,10 @@ export class ReportsController {
       ]),
     );
     sheet.addRow([
-      "Totals",
-      "",
-      "",
-      "",
+      'Totals',
+      '',
+      '',
+      '',
       totals.pledged,
       totals.paid,
       totals.outstanding,
@@ -80,30 +83,31 @@ export class ReportsController {
     sheet.columns.forEach((column) => (column.width = 24));
     sheet.getRow(2).font = { bold: true };
     res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     );
     res.setHeader(
-      "Content-Disposition",
+      'Content-Disposition',
       'attachment; filename="pledge-report.xlsx"',
     );
     await workbook.xlsx.write(res);
     res.end();
   }
-  @Get("export.pdf") async pdf(
+  @Roles('ADMIN', 'STAFF')
+  @Get('export.pdf') async pdf(
     @Req() req: { user: Session },
     @Query() filter: ReportFilterDto,
     @Res() res: Response,
   ) {
     const { rows, totals } = await this.report(req, filter);
-    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
-      "Content-Disposition",
+      'Content-Disposition',
       'attachment; filename="pledge-report.pdf"',
     );
     const doc = new PDFDocument({ margin: 40 });
     doc.pipe(res);
-    doc.fontSize(20).text("Church pledge report").moveDown();
+    doc.fontSize(20).text('Church pledge report').moveDown();
     rows.forEach((row) => {
       if (doc.y > 650) doc.addPage();
       doc.fontSize(11).text(`${row.member.fullName} | ${row.campaign.name}`);

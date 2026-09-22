@@ -4,10 +4,11 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Session, requireChurch } from "../common/session";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "./notifications.service";
+import { Roles, RolesGuard } from "../common/roles.guard";
 
 @ApiTags("Notifications")
 @ApiBearerAuth("access-token")
-@UseGuards(AuthGuard("jwt"))
+@UseGuards(AuthGuard("jwt"), RolesGuard)
 @Controller("notifications")
 export class NotificationsController {
   constructor(
@@ -15,11 +16,13 @@ export class NotificationsController {
     private readonly db: PrismaService,
   ) {}
 
+  @Roles("ADMIN", "STAFF")
   @Get()
   list(@Req() req: { user: Session }) {
     return this.notifications.getNotifications(requireChurch(req.user));
   }
 
+  @Roles("ADMIN")
   @Post("send/pledge-created")
   async sendPledgeCreated(
     @Req() req: { user: Session },
@@ -46,6 +49,7 @@ export class NotificationsController {
     return { success: true };
   }
 
+  @Roles("ADMIN")
   @Post("send/payment-received")
   async sendPaymentReceived(
     @Req() req: { user: Session },
@@ -72,6 +76,7 @@ export class NotificationsController {
     return { success: true };
   }
 
+  @Roles("ADMIN")
   @Post("send/payment-reminder")
   async sendPaymentReminder(
     @Req() req: { user: Session },
@@ -98,6 +103,7 @@ export class NotificationsController {
     return { success: true };
   }
 
+  @Roles("ADMIN")
   @Post("send/fully-paid")
   async sendFullyPaid(
     @Req() req: { user: Session },
@@ -116,6 +122,7 @@ export class NotificationsController {
     return { success: true };
   }
 
+  @Roles("ADMIN")
   @Post("retry-failed")
   async retryFailed(@Req() req: { user: Session }) {
     await this.notifications.retryFailedNotifications();
