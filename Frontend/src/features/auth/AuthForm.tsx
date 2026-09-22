@@ -1,48 +1,289 @@
-import { FormEvent, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Church, ArrowLeft } from 'lucide-react';
-import { api, getError } from '../../api/client';
-import { useAuthStore } from '../../stores/auth-store';
+import { FormEvent, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { 
+  faEye, 
+  faEyeSlash, // Changed from faEyeOff to faEyeSlash
+  faChurch, 
+  faArrowLeft, 
+  faEnvelope, 
+  faLock, 
+  faUsers, 
+  faHeart, 
+  faChartBar, 
+  faShieldHalved,
+  faArrowRight
+} from "@fortawesome/free-solid-svg-icons";
+import { api, getError } from "../../api/client";
+import { useAuthStore } from "../../stores/auth-store";
 
 export function AuthForm({ signup = false }: { signup?: boolean }) {
-  const [form, setForm] = useState({ churchName: '', fullName: '', email: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({
+    churchName: "",
+    fullName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState("");
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
-  const setSession = useAuthStore(state => state.setSession);
+  const setSession = useAuthStore((state) => state.setSession);
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     const next: Record<string, string> = {};
-    if (signup && form.churchName.trim().length < 2) next.churchName = 'Enter your church name (at least 2 characters).';
-    if (signup && form.fullName.trim().length < 2) next.fullName = 'Enter your full name (at least 2 characters).';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) next.email = 'Enter a valid email address.';
-    if (!form.password) next.password = 'Enter your password.';
-    else if (signup && (form.password.length < 8 || !/[a-z]/.test(form.password) || !/[A-Z]/.test(form.password) || !/[0-9]/.test(form.password))) next.password = 'Use 8 or more characters, uppercase and lowercase letters, and a number.';
-    if (signup && (!form.confirmPassword || form.confirmPassword !== form.password)) next.confirmPassword = 'Enter the same password again.';
-    setErrors(next); setNotice('');
+    if (signup && form.churchName.trim().length < 2)
+      next.churchName = "Enter your church name (at least 2 characters).";
+    if (signup && form.fullName.trim().length < 2)
+      next.fullName = "Enter your full name (at least 2 characters).";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+      next.email = "Enter a valid email address.";
+    if (!form.password) next.password = "Enter your password.";
+    else if (
+      signup &&
+      (form.password.length < 8 ||
+        !/[a-z]/.test(form.password) ||
+        !/[A-Z]/.test(form.password) ||
+        !/[0-9]/.test(form.password))
+    )
+      next.password =
+        "Use 8 or more characters, uppercase and lowercase letters, and a number.";
+    if (
+      signup &&
+      (!form.confirmPassword || form.confirmPassword !== form.password)
+    )
+      next.confirmPassword = "Enter the same password again.";
+    setErrors(next);
+    setNotice("");
     if (Object.keys(next).length) return;
     setBusy(true);
     try {
-      const payload = signup ? { churchName: form.churchName.trim(), fullName: form.fullName.trim(), email: form.email.trim().toLowerCase(), password: form.password }
+      const payload = signup
+        ? {
+            churchName: form.churchName.trim(),
+            fullName: form.fullName.trim(),
+            email: form.email.trim().toLowerCase(),
+            password: form.password,
+          }
         : { email: form.email.trim().toLowerCase(), password: form.password };
-      const { data } = await api.post(signup ? '/auth/signup' : '/auth/login', payload);
-      setSession(data.accessToken, data.user); navigate('/dashboard');
-    } catch (error) { setNotice(getError(error)); } finally { setBusy(false); }
+      const { data } = await api.post(
+        signup ? "/auth/signup" : "/auth/login",
+        payload,
+      );
+      setSession(data.accessToken, data.user);
+      navigate("/dashboard");
+    } catch (error) {
+      setNotice(getError(error));
+    } finally {
+      setBusy(false);
+    }
   }
-  const names: (keyof typeof form)[] = signup ? ['churchName', 'fullName', 'email', 'password', 'confirmPassword'] : ['email', 'password'];
-  const labels = { churchName: 'Church name', fullName: 'Administrator full name', email: 'Email address', password: 'Password', confirmPassword: 'Confirm password' };
-  return <main className="min-h-screen lg:grid lg:grid-cols-2">
-    <aside className="hidden bg-navy p-16 text-white lg:flex lg:flex-col lg:justify-between"><Link to="/" className="flex items-center gap-3 text-xl font-semibold"><Church className="text-gold" />Church Pledge</Link>
-      <div><p className="mb-5 text-sm font-semibold uppercase tracking-widest text-gold">Built for your ministry</p><h1 className="text-5xl font-bold leading-tight">Steward every pledge.<br />Support every purpose.</h1><p className="mt-6 leading-7 text-slate-300">Your members, campaigns and collections in one organized church workspace.</p></div><p className="text-sm text-slate-300">Clear records. Confident decisions.</p></aside>
-    <section className="flex items-center justify-center px-6 py-10"><div className="w-full max-w-md"><Link to="/" className="mb-8 inline-flex items-center gap-2 text-sm text-muted"><ArrowLeft size={16} />Back to home</Link>
-      <h2 className="text-3xl font-bold">{signup ? 'Register your church' : 'Welcome back'}</h2><p className="mt-3 mb-8 text-muted">{signup ? 'Create your workspace and administrator account.' : 'Sign in to your church workspace.'}</p>
-      {notice && <p role="alert" className="mb-5 rounded-lg bg-red-50 p-3 text-sm text-danger">{notice}</p>}
-      <form noValidate onSubmit={submit} className="space-y-5">{names.map(name => <div key={name}><label htmlFor={name} className="text-sm font-medium">{labels[name]}</label><div className="relative"><input id={name} className={`field ${errors[name] ? 'border-red-500' : ''}`} type={name === 'email' ? 'email' : name === 'confirmPassword' || (name === 'password' && !visible) ? 'password' : 'text'} value={form[name]} aria-invalid={!!errors[name]} aria-describedby={`${name}-help`} autoComplete={name === 'password' ? (signup ? 'new-password' : 'current-password') : name === 'email' ? 'email' : 'off'} onChange={event => setForm({ ...form, [name]: event.target.value })} />{name === 'password' && <button type="button" className="absolute right-3 top-4 text-muted" aria-label={visible ? 'Hide password' : 'Show password'} onClick={() => setVisible(!visible)}>{visible ? <EyeOff size={18} /> : <Eye size={18} />}</button>}</div>
-        <p id={`${name}-help`} className={`mt-1 text-xs ${errors[name] ? 'text-danger' : 'text-muted'}`}>{errors[name] || (name === 'password' && signup ? '8+ characters, uppercase and lowercase letters, and a number.' : '')}</p></div>)}
-        <button disabled={busy} className="btn primary w-full py-3">{busy ? 'Please wait…' : signup ? 'Create church workspace' : 'Sign in'}</button>
-      </form><p className="mt-7 text-center text-sm text-muted">{signup ? 'Already have an account?' : 'New church?'} <Link to={signup ? '/login' : '/signup'} className="font-semibold text-navy underline underline-offset-4">{signup ? 'Sign in' : 'Register your church'}</Link></p>
-    </div></section>
-  </main>;
+
+  const names: (keyof typeof form)[] = signup
+    ? ["churchName", "fullName", "email", "password", "confirmPassword"]
+    : ["email", "password"];
+  const labels = {
+    churchName: "Church name",
+    fullName: "Administrator full name",
+    email: "Email address",
+    password: "Password",
+    confirmPassword: "Confirm password",
+  };
+
+  return (
+    <main className="min-h-screen lg:grid lg:grid-cols-2">
+      {/* Left Side - Dark Blue Panel */}
+      <aside className="relative hidden bg-navy p-16 text-white lg:flex lg:flex-col lg:justify-between overflow-hidden">
+        {/* Background Image Overlay */}
+        <div 
+          className="absolute inset-0 z-0 opacity-20 bg-cover bg-center"
+          style={{ backgroundImage: "url('/Assets/Images/church-hero.jpg')" }}
+        ></div>
+        {/* Gradient Overlay for better text readability */}
+        <div className="absolute inset-0 z-0 bg-gradient-to-t from-navy via-navy/80 to-navy/40"></div>
+
+        <div className="relative z-10">
+          <Link to="/" className="flex items-center gap-3 text-xl font-semibold">
+            <FontAwesomeIcon icon={faChurch} className="text-gold text-3xl" />
+            <div>
+              <div className="font-bold">Church Pledge</div>
+              <div className="text-xs font-normal text-slate-300">Faith. Giving. Greater Impact.</div>
+            </div>
+          </Link>
+          
+          <div className="mt-16">
+            <p className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-slate-300">
+              <span className="h-px w-8 bg-gold"></span> Built for your ministry
+            </p>
+            <h1 className="text-5xl font-bold leading-tight">
+              Steward every pledge.
+              <br />
+              <span className="text-gold">Support every purpose.</span>
+            </h1>
+            <p className="mt-6 max-w-md leading-7 text-slate-300">
+              Your members, campaigns and collections in one organized church
+              workspace.
+            </p>
+
+            {/* Feature Icons Row */}
+            <div className="mt-12 grid grid-cols-4 gap-4 text-center">
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-2xl">
+                  <FontAwesomeIcon icon={faUsers} />
+                </div>
+                <span className="text-xs font-medium">Manage<br/>Members</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-2xl">
+                  <FontAwesomeIcon icon={faHeart} />
+                </div>
+                <span className="text-xs font-medium">Track<br/>Pledges</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-2xl">
+                  <FontAwesomeIcon icon={faChartBar} />
+                </div>
+                <span className="text-xs font-medium">View<br/>Reports</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-2xl">
+                  <FontAwesomeIcon icon={faShieldHalved} />
+                </div>
+                <span className="text-xs font-medium">Secure<br/>& Reliable</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="relative z-10 mt-16 flex items-center gap-3 text-sm text-slate-400">
+          <span className="h-px w-8 bg-gold"></span>
+          Clear records. Confident decisions.
+        </div>
+      </aside>
+
+      {/* Right Side - Form */}
+      <section className="flex items-center justify-center bg-white px-6 py-10">
+        <div className="w-full max-w-md">
+          <Link
+            to="/"
+            className="mb-8 inline-flex items-center gap-2 text-sm text-slate-500 hover:text-navy transition-colors"
+          >
+            <FontAwesomeIcon icon={faArrowLeft} size="sm" />
+            Back to home
+          </Link>
+          
+          <h2 className="text-3xl font-bold text-navy">
+            {signup ? "Register your church" : "Welcome back"}
+          </h2>
+          <p className="mt-3 mb-8 text-slate-500">
+            {signup
+              ? "Create your workspace and administrator account."
+              : "Sign in to your church workspace."}
+          </p>
+
+          {notice && (
+            <p
+              role="alert"
+              className="mb-5 rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-100"
+            >
+              {notice}
+            </p>
+          )}
+
+          <form noValidate onSubmit={submit} className="space-y-5">
+            {names.map((name) => (
+              <div key={name}>
+                <label htmlFor={name} className="mb-1 block text-sm font-semibold text-navy">
+                  {labels[name]}
+                </label>
+                <div className="relative">
+                  {/* Input Icon */}
+                  <div className="absolute left-3 top-3.5 text-slate-400">
+                    {name === "email" ? <FontAwesomeIcon icon={faEnvelope} /> : 
+                     name.includes("password") ? <FontAwesomeIcon icon={faLock} /> : 
+                     <FontAwesomeIcon icon={faChurch} />}
+                  </div>
+                  
+                  <input
+                    id={name}
+                    className={`w-full rounded-lg border bg-slate-50 py-3 pl-10 pr-4 text-navy outline-none transition-all focus:border-navy focus:bg-white focus:ring-1 focus:ring-navy ${
+                      errors[name] ? "border-red-500" : "border-slate-200"
+                    }`}
+                    type={
+                      name === "email"
+                        ? "email"
+                        : name === "confirmPassword" ||
+                            (name === "password" && !visible)
+                          ? "password"
+                          : "text"
+                    }
+                    value={form[name]}
+                    aria-invalid={!!errors[name]}
+                    aria-describedby={`${name}-help`}
+                    autoComplete={
+                      name === "password"
+                        ? signup
+                          ? "new-password"
+                          : "current-password"
+                        : name === "email"
+                          ? "email"
+                          : "off"
+                    }
+                    onChange={(event) =>
+                      setForm({ ...form, [name]: event.target.value })
+                    }
+                  />
+                  {name === "password" && (
+                    <button
+                      type="button"
+                      className="absolute right-3 top-3.5 text-slate-400 hover:text-navy"
+                      aria-label={visible ? "Hide password" : "Show password"}
+                      onClick={() => setVisible(!visible)}
+                    >
+                      {/* FIXED: Changed faEyeOff to faEyeSlash */}
+                      {visible ? <FontAwesomeIcon icon={faEyeSlash} /> : <FontAwesomeIcon icon={faEye} />}
+                    </button>
+                  )}
+                </div>
+                <p
+                  id={`${name}-help`}
+                  className={`mt-1 text-xs ${errors[name] ? "text-red-500" : "text-slate-400"}`}
+                >
+                  {errors[name] ||
+                    (name === "password" && signup
+                      ? "8+ characters, uppercase and lowercase letters, and a number."
+                      : "")}
+                </p>
+              </div>
+            ))}
+
+            <button 
+              disabled={busy} 
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-navy py-3 font-semibold text-white transition-colors hover:bg-slate-800 disabled:opacity-70"
+            >
+              {busy
+                ? "Please wait…"
+                : signup
+                  ? "Create church workspace"
+                  : "Sign in"}
+              {!busy && <FontAwesomeIcon icon={faArrowRight} size="sm" />}
+            </button>
+          </form>
+          
+          <p className="mt-7 text-center text-sm text-slate-500">
+            {signup ? "Already have an account?" : "New church?"}{" "}
+            <Link
+              to={signup ? "/login" : "/signup"}
+              className="font-semibold text-navy underline underline-offset-4 hover:text-gold transition-colors"
+            >
+              {signup ? "Sign in" : "Register your church"}
+            </Link>
+          </p>
+        </div>
+      </section>
+    </main>
+  );
 }

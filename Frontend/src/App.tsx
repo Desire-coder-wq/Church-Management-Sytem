@@ -13,6 +13,7 @@ function Protected({ children }: { children: React.ReactNode }) {
     <Navigate to="/login" replace />
   );
 }
+
 export function App() {
   return (
     <Routes>
