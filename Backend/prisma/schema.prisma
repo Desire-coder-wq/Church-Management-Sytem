@@ -99,8 +99,6 @@ model Group {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@unique([churchId, name])
 }
 
 // ======================================================
@@ -138,7 +136,7 @@ model Campaign {
   id String @id @default(cuid())
   churchId String
   church Church @relation(fields: [churchId], references: [id])
-  name        String @unique
+  name        String
   description String?
 
   targetAmount Decimal @db.Decimal(14, 2)
@@ -147,12 +145,12 @@ model Campaign {
   endDate   DateTime
 
   status CampaignStatus @default(ACTIVE)
+  @@unique([churchId, name])
 
   pledges Pledge[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   @@index([status])
   @@index([startDate])
   @@index([endDate])
