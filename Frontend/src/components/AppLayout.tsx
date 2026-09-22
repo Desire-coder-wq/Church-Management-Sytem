@@ -1,1 +1,51 @@
-import {NavLink} from 'react-router-dom';import {LayoutDashboard,Users,Flag,HandCoins,ReceiptText,Bell,FileBarChart,LogOut} from 'lucide-react';import {useAuthStore} from '../stores/auth-store';const links=[['Dashboard','/dashboard',LayoutDashboard],['Members','/members',Users],['Campaigns','/campaigns',Flag],['Pledges','/pledges',HandCoins],['Collections','/collections',ReceiptText],['Notifications','/notifications',Bell],['Reports','/reports',FileBarChart]] as const;export function AppLayout({children}:{children:React.ReactNode}){const logout=useAuthStore(s=>s.logout);return <div className="min-h-screen md:flex"><aside className="bg-navy p-5 text-white md:min-h-screen md:w-64"><b>Church Pledge</b><nav className="mt-8 flex gap-1 overflow-auto md:block md:space-y-1">{links.map(([name,path,Icon])=><NavLink key={path} to={path} className="nav"><Icon size={17}/>{name}</NavLink>)}</nav></aside><main className="flex-1"><header className="flex justify-end border-b border-line bg-white p-4"><button className="flex items-center gap-2 text-sm text-navy" onClick={logout}><LogOut size={16}/>Sign out</button></header><section className="p-5 md:p-8">{children}</section></main></div>}
+import { NavLink } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Users,
+  Flag,
+  HandCoins,
+  ReceiptText,
+  Bell,
+  FileBarChart,
+  LogOut,
+} from "lucide-react";
+import { useAuthStore } from "../stores/auth-store";
+const links = [
+  ["Dashboard", "/dashboard", LayoutDashboard],
+  ["Members", "/members", Users],
+  ["Campaigns", "/campaigns", Flag],
+  ["Pledges", "/pledges", HandCoins],
+  ["Collections", "/collections", ReceiptText],
+  ["Notifications", "/notifications", Bell],
+  ["Reports", "/reports", FileBarChart],
+] as const;
+export function AppLayout({ children }: { children: React.ReactNode }) {
+  const logout = useAuthStore((s) => s.logout);
+  return (
+    <div className="min-h-screen md:flex">
+      <aside className="bg-navy p-5 text-white md:min-h-screen md:w-64">
+        <b>Church Pledge</b>
+        <nav className="mt-8 flex gap-1 overflow-auto md:block md:space-y-1">
+          {links.map(([name, path, Icon]) => (
+            <NavLink key={path} to={path} className="nav">
+              <Icon size={17} />
+              {name}
+            </NavLink>
+          ))}
+        </nav>
+      </aside>
+      <main className="flex-1">
+        <header className="flex justify-end border-b border-line bg-white p-4">
+          <button
+            className="flex items-center gap-2 text-sm text-navy"
+            onClick={logout}
+          >
+            <LogOut size={16} />
+            Sign out
+          </button>
+        </header>
+        <section className="p-5 md:p-8">{children}</section>
+      </main>
+    </div>
+  );
+}

@@ -1,1 +1,52 @@
-import {Navigate,Route,Routes} from 'react-router-dom';import {AppLayout} from './components/AppLayout';import {useAuthStore} from './stores/auth-store';import {AuthPage} from './pages/AuthPage';import {LandingPage} from './pages/LandingPage';import {DashboardPage} from './pages/DashboardPage';import {ManagementPage} from './pages/ManagementPage';function Protected({children}:{children:React.ReactNode}){return useAuthStore(s=>s.token)?<AppLayout>{children}</AppLayout>:<Navigate to="/login" replace/>}export function App(){return <Routes><Route path="/" element={<LandingPage/>}/><Route path="/login" element={<AuthPage/>}/><Route path="/signup" element={<AuthPage signup/>}/><Route path="/dashboard" element={<Protected><DashboardPage/></Protected>}/><Route path="/members" element={<Protected><ManagementPage title="Members" path="/members" fields={['fullName','phone','group']}/></Protected>}/><Route path="/campaigns" element={<Protected><ManagementPage title="Campaigns" path="/campaigns" fields={['name','description','targetAmount','startDate','endDate']}/></Protected>}/><Route path="/pledges" element={<Protected><ManagementPage title="Pledges" path="/pledges" fields={['memberId','campaignId','amount','dueDate']}/></Protected>}/><Route path="/collections" element={<Protected><ManagementPage title="Collections" path="/collections" fields={['pledgeId','amount','paymentDate','method','referenceNumber']}/></Protected>}/><Route path="/notifications" element={<Protected><ManagementPage title="Notifications" path="/notifications" fields={[]}/></Protected>}/><Route path="/reports" element={<Protected><ManagementPage title="Reports" path="/reports" fields={[]}/></Protected>}/></Routes>}
+import { Navigate, Route, Routes } from "react-router-dom";
+import { AppLayout } from "./components/AppLayout";
+import { useAuthStore } from "./stores/auth-store";
+import { AuthForm } from "./features/auth/AuthForm";
+import { LandingPage } from "./pages/LandingPage";
+import { DashboardPage } from "./pages/DashboardPage";
+import { RecordsPage } from "./pages/RecordsPage";
+
+function Protected({ children }: { children: React.ReactNode }) {
+  return useAuthStore((state) => state.token) ? (
+    <AppLayout>{children}</AppLayout>
+  ) : (
+    <Navigate to="/login" replace />
+  );
+}
+export function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/welcome" element={<LandingPage />} />
+      <Route path="/login" element={<AuthForm key="login" />} />
+      <Route path="/signup" element={<AuthForm key="signup" signup />} />
+      <Route
+        path="/dashboard"
+        element={
+          <Protected>
+            <DashboardPage />
+          </Protected>
+        }
+      />
+      {[
+        "members",
+        "campaigns",
+        "pledges",
+        "collections",
+        "notifications",
+        "reports",
+      ].map((resource) => (
+        <Route
+          key={resource}
+          path={`/${resource}`}
+          element={
+            <Protected>
+              <RecordsPage key={resource} resource={resource} />
+            </Protected>
+          }
+        />
+      ))}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}

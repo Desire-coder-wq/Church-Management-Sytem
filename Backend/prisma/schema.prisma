@@ -99,14 +99,12 @@ model Group {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  @@unique([churchId, name])
 }
 
 // ======================================================
 // MEMBERS
 // ======================================================
-
-  @@unique([churchId, name])
-}
 
 model Member {
   id String @id @default(cuid())

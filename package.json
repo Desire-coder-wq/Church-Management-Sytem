@@ -1,7 +1,19 @@
 {
   "name": "church-pledge-management-system",
   "private": true,
-  "workspaces": ["Backend", "Frontend"],
-  "scripts": { "dev": "concurrently \"npm run start:dev -w Backend\" \"npm run dev -w Frontend\"", "build": "npm run build -w Backend && npm run build -w Frontend", "test": "npm run test -w Backend" },
-  "devDependencies": { "concurrently": "^9.1.2" }
+  "workspaces": [
+    "Backend",
+    "Frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run start:dev -w Backend\" \"npm run dev -w Frontend\"",
+    "build": "npm run build -w Backend && npm run build -w Frontend",
+    "test": "npm run test -w Backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "allowScripts": {
+    "bcrypt@5.1.1": true
+  }
 }
