@@ -14,9 +14,14 @@ async function bootstrap() {
   // API prefix
   app.setGlobalPrefix("api");
 
-  // CORS
+  // Allow the deployed Cloudflare site, the configured site, and local Vite development.
+  const allowedOrigins = Array.from(new Set([
+    "https://church-management-sytem.pages.dev",
+    "http://localhost:5173",
+    process.env.FRONTEND_URL?.trim().replace(/\/+$/, ""),
+  ].filter((origin): origin is string => Boolean(origin))));
   app.enableCors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true,
   });
 
