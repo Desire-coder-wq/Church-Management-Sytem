@@ -6,7 +6,7 @@ A secure, responsive system for church staff to manage members, campaigns, pledg
 
 - React, TypeScript and Tailwind CSS
 - NestJS REST API with Swagger
-- Prisma ORM and Supabase PostgreSQL
+- Prisma ORM with Neon PostgreSQL
 - Twilio-ready SMS adapter (mock mode for demonstration)
 - Jest for testing (unit, e2e)
 
@@ -41,12 +41,13 @@ JWT-protected API endpoints, bcrypt password hashing, request validation, Helmet
 
 ## Setup
 
-1. Copy `.env.example` to `Backend/.env`, set `DATABASE_URL` to Supabase PostgreSQL and use a long unique `JWT_SECRET`.
+1. Create `Backend/.env` with your Neon PostgreSQL `DATABASE_URL` and `DIRECT_URL`, plus a long unique `JWT_SECRET`. Keep this file private.
 2. Run `npm install` from the repository root.
-3. Run `npm run prisma:generate -w Backend`, then `npm run prisma:migrate -w Backend`.
-4. Run `npm run prisma:seed -w Backend` to seed sample data.
-5. Start backend: `npm run start:dev -w Backend`
-6. Start frontend: `npm run dev -w Frontend`
+3. Run `npm run prisma:generate -w Backend`. From the `Backend` directory, run `npx prisma db push` to apply the schema to Neon, then return to the repository root.
+4. Start backend: `npm run start:dev -w Backend`
+5. Start frontend: `npm run dev -w Frontend`
+
+The application does not require seed data. Register a church in the app to create its first administrator account.
 
 ## API Documentation
 
@@ -64,16 +65,18 @@ npm run test:cov -w Backend
 
 ## Environment Variables
 
-See `.env.example` for all required variables:
+Set these variables in `Backend/.env` for local development and in your backend host's environment settings for deployment:
 
-- `DATABASE_URL`: Supabase PostgreSQL connection string
-- `DIRECT_URL`: Direct connection for migrations
+- `DATABASE_URL`: Neon PostgreSQL connection string used by the running API
+- `DIRECT_URL`: Neon direct PostgreSQL connection string used by Prisma schema operations
 - `JWT_SECRET`: Long random string (32+ chars)
 - `SMS_PROVIDER`: `mock` or `twilio`
 - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`: Twilio credentials
 - `PAYMENT_GATEWAY`: `mock`, `stripe`, `flutterwave`, `paystack`
 - `FRONTEND_URL`: Frontend origin for CORS
 - `PORT`: Backend port (default 3000)
+
+The frontend uses `VITE_API_URL=https://church-management-sytem.onrender.com/api`. For a different backend, set `VITE_API_URL` in `Frontend/.env` or your frontend host's build environment. Vite reads this value at build time.
 
 ## Color Palette
 
