@@ -59,6 +59,9 @@ model Church {
   id String @id @default(cuid())
   name String
   users User[]
+  groups Group[]
+  members Member[]
+  campaigns Campaign[]
   createdAt DateTime @default(now())
 }
 
@@ -86,8 +89,10 @@ model User {
 
 
 model Group {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id String @id @default(cuid())
+  churchId String
+  church Church @relation(fields: [churchId], references: [id])
+  name        String
   description String?
 
   members Member[]
@@ -95,7 +100,7 @@ model Group {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([name])
+  @@unique([churchId, name])
 }
 
 // ======================================================
@@ -103,7 +108,9 @@ model Group {
 // ======================================================
 
 model Member {
-  id       String @id @default(cuid())
+  id String @id @default(cuid())
+  churchId String
+  church Church @relation(fields: [churchId], references: [id])
   fullName String
   phone    String @unique
 
@@ -128,7 +135,9 @@ model Member {
 // ======================================================
 
 model Campaign {
-  id          String @id @default(cuid())
+  id String @id @default(cuid())
+  churchId String
+  church Church @relation(fields: [churchId], references: [id])
   name        String @unique
   description String?
 
