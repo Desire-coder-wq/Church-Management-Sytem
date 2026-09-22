@@ -5,7 +5,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_DATABASE_URL")
+  directUrl = env("DIRECT_URL")
  
 }
 
@@ -55,8 +55,17 @@ enum SmsStatus {
 // USERS
 
 
+model Church {
+  id String @id @default(cuid())
+  name String
+  users User[]
+  createdAt DateTime @default(now())
+}
+
 model User {
   id           String   @id @default(cuid())
+  churchId String?
+  church Church? @relation(fields: [churchId], references: [id])
   fullName     String
   email        String   @unique
   passwordHash String
