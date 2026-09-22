@@ -105,6 +105,9 @@ model Group {
 // MEMBERS
 // ======================================================
 
+  @@unique([churchId, name])
+}
+
 model Member {
   id String @id @default(cuid())
   churchId String
