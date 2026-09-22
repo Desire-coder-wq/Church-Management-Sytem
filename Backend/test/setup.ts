@@ -1,0 +1,9 @@
+process.env.JWT_SECRET = 'test-secret-key-for-e2e-testing-only';
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
+process.env.DIRECT_URL = 'postgresql://test:test@localhost:5432/test';
+process.env.SMS_PROVIDER = 'mock';
+process.env.TWILIO_ACCOUNT_SID = '';
+process.env.TWILIO_AUTH_TOKEN = '';
+process.env.TWILIO_FROM_NUMBER = '';
+process.env.FRONTEND_URL = 'http://localhost:5173';
+process.env.PORT = '3000';
