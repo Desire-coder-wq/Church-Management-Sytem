@@ -31,9 +31,17 @@ describe('PaymentGatewayService', () => {
 
   it('should return error for unimplemented providers', async () => {
     config.get.mockReturnValue('stripe');
-    const result = await service.processPayment(50000, 'CASH', 'TXN-002');
+    const stripeModule: TestingModule = await Test.createTestingModule({
+      providers: [
+        PaymentGatewayService,
+        { provide: ConfigService, useValue: config },
+      ],
+    }).compile();
+    const stripeService = stripeModule.get<PaymentGatewayService>(PaymentGatewayService);
+    const result = await stripeService.processPayment(50000, 'CASH', 'TXN-002');
     expect(result.success).toBe(false);
     expect(result.error).toContain('not implemented');
+    await stripeModule.close();
   });
 
   it('should verify payment', async () => {
