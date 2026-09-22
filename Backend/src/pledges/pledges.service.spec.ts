@@ -8,7 +8,7 @@ function makePledge(overrides: Partial<PledgeRecord> = {}): PledgeRecord {
     campaignId: 'campaign-1',
     amount: new Prisma.Decimal(100000),
     dueDate: new Date('2026-01-01'),
-    status: 'PENDING',
+    status: 'PENDING' as const,
     createdAt: new Date(),
     updatedAt: new Date(),
     member: {
@@ -30,7 +30,7 @@ function makePledge(overrides: Partial<PledgeRecord> = {}): PledgeRecord {
       targetAmount: new Prisma.Decimal(500000000),
       startDate: new Date('2025-01-01'),
       endDate: new Date('2026-12-31'),
-      status: 'ACTIVE',
+      status: 'ACTIVE' as const,
       createdAt: new Date(),
       updatedAt: new Date(),
     },

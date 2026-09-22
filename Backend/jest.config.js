@@ -1,8 +1,8 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  roots: ['<rootDir>/src'],
-  testRegex: '.*\\.spec\\.ts$',
+  roots: ['<rootDir>/src', '<rootDir>/test'],
+  testRegex: ['.*\\.spec\\.ts$', '.*\\.e2e-spec\\.ts$'],
   moduleFileExtensions: ['js', 'json', 'ts'],
   collectCoverageFrom: [
     'src/**/*.ts',
@@ -15,7 +15,5 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   testTimeout: 30000,
-  moduleNameMapper: {
-    '^@prisma/client$': '<rootDir>/../../node_modules/@prisma/client',
-  },
+  setupFiles: ['<rootDir>/test/setup.ts'],
 };
