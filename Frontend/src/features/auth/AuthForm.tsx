@@ -100,7 +100,7 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
         {/* Background Image Overlay */}
         <div 
           className="absolute inset-0 z-0 opacity-20 bg-cover bg-center"
-          style={{ backgroundImage: "url('/Assets/Images/church-hero.jpg')" }}
+          style={{ backgroundImage: "url('/Assets/Images/Church.jpg')" }}
         ></div>
         {/* Gradient Overlay for better text readability */}
         <div className="absolute inset-0 z-0 bg-gradient-to-t from-navy via-navy/80 to-navy/40"></div>
@@ -116,10 +116,10 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
           
           <div className="mt-16">
             <p className="mb-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-slate-300">
-              <span className="h-px w-8 bg-gold"></span> Built for your ministry
+             Built for your ministry
             </p>
             <h1 className="text-5xl font-bold leading-tight">
-              Steward every pledge.
+            
               <br />
               <span className="text-gold">Support every purpose.</span>
             </h1>
@@ -159,8 +159,7 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
         </div>
         
         <div className="relative z-10 mt-16 flex items-center gap-3 text-sm text-slate-400">
-          <span className="h-px w-8 bg-gold"></span>
-          Clear records. Confident decisions.
+     
         </div>
       </aside>
 

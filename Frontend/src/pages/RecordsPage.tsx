@@ -89,6 +89,8 @@ export function RecordsPage({ resource }: { resource: string }) {
   const [status, setStatus] = useState("");
   const [requestId, setRequestId] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   async function load() {
     setLoading(true);
@@ -260,7 +262,10 @@ export function RecordsPage({ resource }: { resource: string }) {
             className="min-w-0 flex-1 outline-none text-sm"
             placeholder={`Search ${config.title.toLowerCase()}…`}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+             onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
           />
           <span className="text-xs text-muted">{filtered.length} records</span>
           {resource === "reports" && (
@@ -280,74 +285,100 @@ export function RecordsPage({ resource }: { resource: string }) {
             </select>
           )}
         </div>
-        <div className="overflow-x-auto">
+         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-muted">
-              <tr>
-                <th className="p-4">{resource === "members" ? "Member" : "Record"}</th>
-                <th className="p-4">Details</th>
-                <th className="p-4">Amount / balance</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((row) => (
-                <tr key={row.id} className="border-t border-line hover:bg-slate-50/70">
-                  <td className="p-4 font-medium">
-                    {row.fullName ?? row.name ?? row.member?.fullName ?? row.pledge?.member?.fullName ?? "Notification"}
-                  </td>
-                  <td className="p-4 text-muted">
-                    {row.phone ?? row.campaign?.name ?? row.pledge?.campaign?.name ?? row.message ?? "—"}
-                    {row.group && <span className="block text-xs">{row.group.name}</span>}
-                  </td>
-                  <td className="p-4">
-                    {row.balance !== undefined ? (
-                      <>
-                        {ugx(row.balance)}
-                        <span className="block text-xs text-muted">
-                          Paid {ugx(row.paid ?? 0)} of {ugx(row.amount ?? 0)}
-                        </span>
-                      </>
-                    ) : row.amount !== undefined || row.targetAmount !== undefined ? (
-                      ugx(Number(row.amount ?? row.targetAmount))
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td className="p-4">
-                    <span
-                      className={`rounded-full px-2 py-1 text-xs font-medium ${row.status === "PAID" || row.status === "SENT" ? "bg-green-50 text-success" : row.status === "OVERDUE" || row.status === "FAILED" ? "bg-red-50 text-danger" : "bg-slate-100 text-muted"}`}
-                    >
-                      {row.status?.replaceAll("_", " ") ?? "Active"}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    {!isReadOnly && resource === "members" && (
-                      <button className="font-medium text-navy" onClick={() => void start(row)}>
-                        Edit
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {loading ? (
-          <p className="p-10 text-center text-muted">Loading records…</p>
-        ) : (
-          !filtered.length && (
-            <div className="p-12 text-center">
-              <h2 className="font-semibold">No {config.title.toLowerCase()} yet</h2>
-              <p className="mt-2 text-sm text-muted">
-                {config.fields.length
-                  ? `Add your first ${config.singular} to get started.`
-                  : "Your activity will appear here as records are created."}
-              </p>
-            </div>
-          )
-        )}
+             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-muted">
+               <tr>
+                 <th className="p-4">{resource === "members" ? "Member" : "Record"}</th>
+                 <th className="p-4">Details</th>
+                 <th className="p-4">Amount / balance</th>
+                 <th className="p-4">Status</th>
+                 <th className="p-4">Action</th>
+               </tr>
+             </thead>
+             <tbody>
+               {filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((row) => (
+                 <tr key={row.id} className="border-t border-line hover:bg-slate-50/70">
+                   <td className="p-4 font-medium">
+                     {row.fullName ?? row.name ?? row.member?.fullName ?? row.pledge?.member?.fullName ?? "Notification"}
+                   </td>
+                   <td className="p-4 text-muted">
+                     {row.phone ?? row.campaign?.name ?? row.pledge?.campaign?.name ?? row.message ?? "—"}
+                     {row.group && <span className="block text-xs">{row.group.name}</span>}
+                   </td>
+                   <td className="p-4">
+                     {row.balance !== undefined ? (
+                       <>
+                         {ugx(row.balance)}
+                         <span className="block text-xs text-muted">
+                           Paid {ugx(row.paid ?? 0)} of {ugx(row.amount ?? 0)}
+                         </span>
+                       </>
+                     ) : row.amount !== undefined || row.targetAmount !== undefined ? (
+                       ugx(Number(row.amount ?? row.targetAmount))
+                     ) : (
+                       "—"
+                     )}
+                   </td>
+                   <td className="p-4">
+                     <span
+                       className={`rounded-full px-2 py-1 text-xs font-medium ${row.status === "PAID" || row.status === "SENT" ? "bg-green-50 text-success" : row.status === "OVERDUE" || row.status === "FAILED" ? "bg-red-50 text-danger" : "bg-slate-100 text-muted"}`}
+                     >
+                       {row.status?.replaceAll("_", " ") ?? "Active"}
+                     </span>
+                   </td>
+                   <td className="p-4">
+                     {!isReadOnly && resource === "members" && (
+                       <button className="font-medium text-navy" onClick={() => void start(row)}>
+                         Edit
+                       </button>
+                     )}
+                   </td>
+                 </tr>
+               ))}
+             </tbody>
+           </table>
+         </div>
+         {loading ? (
+           <p className="p-10 text-center text-muted">Loading records…</p>
+         ) : (
+           !filtered.length && (
+             <div className="p-12 text-center">
+               <h2 className="font-semibold">No {config.title.toLowerCase()} yet</h2>
+               <p className="mt-2 text-sm text-muted">
+                 {config.fields.length
+                   ? `Add your first ${config.singular} to get started.`
+                   : "Your activity will appear here as records are created."}
+               </p>
+             </div>
+           )
+         )}
+         {filtered.length > itemsPerPage && (
+           <div className="flex items-center justify-between border-t border-line px-4 py-3">
+             <p className="text-sm text-muted">
+               Page {currentPage} of {Math.ceil(filtered.length / itemsPerPage)}
+             </p>
+             <div className="flex gap-1">
+               <button
+                 className="rounded-md px-3 py-1 text-sm font-medium text-navy hover:bg-slate-100 disabled:opacity-50"
+                 disabled={currentPage === 1}
+                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+               >
+                 Previous
+               </button>
+               <button
+                 className="rounded-md px-3 py-1 text-sm font-medium text-navy hover:bg-slate-100 disabled:opacity-50"
+                 disabled={currentPage === Math.ceil(filtered.length / itemsPerPage)}
+                 onClick={() => setCurrentPage((p) => {
+                   const max = Math.ceil(filtered.length / itemsPerPage);
+                   return Math.min(max, p + 1);
+                 })}
+               >
+                 Next
+               </button>
+             </div>
+           </div>
+         )}
       </div>
       {open && !isReadOnly && (
         <div className="mt-6 rounded-xl border border-line bg-white p-6">

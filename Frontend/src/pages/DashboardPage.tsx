@@ -13,6 +13,8 @@ export function DashboardPage() {
   const [data, setData] = useState<any>();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     setLoading(true);
@@ -86,10 +88,10 @@ export function DashboardPage() {
               <th className="table-cell">Date</th>
             </tr>
           </thead>
-          <tbody>
-            {data.recentCollections?.length ? (
-              data.recentCollections.map((c: any) => (
-                <tr key={c.id} className="table-row">
+         <tbody>
+             {data.recentCollections?.length ? (
+               data.recentCollections.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((c: any) => (
+                 <tr key={c.id} className="table-row">
                   <td className="table-cell font-medium">{c.member?.fullName ?? "—"}</td>
                   <td className="table-cell text-muted">{c.campaign?.name ?? "—"}</td>
                   <td className="table-cell">{ugx(Number(c.amount))}</td>
@@ -104,9 +106,35 @@ export function DashboardPage() {
                 </td>
               </tr>
             )}
-          </tbody>
-        </table>
-      </div>
+           </tbody>
+         </table>
+       </div>
+       {data.recentCollections?.length > itemsPerPage && (
+         <div className="flex items-center justify-between border-t border-line px-4 py-3">
+           <p className="text-sm text-muted">
+             Page {currentPage} of {Math.ceil((data.recentCollections?.length || 0) / itemsPerPage)}
+           </p>
+           <div className="flex gap-1">
+             <button
+               className="rounded-md px-3 py-1 text-sm font-medium text-navy hover:bg-slate-100 disabled:opacity-50"
+               disabled={currentPage === 1}
+               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+             >
+               Previous
+             </button>
+             <button
+               className="rounded-md px-3 py-1 text-sm font-medium text-navy hover:bg-slate-100 disabled:opacity-50"
+               disabled={currentPage === Math.ceil((data.recentCollections?.length || 0) / itemsPerPage)}
+               onClick={() => setCurrentPage((p) => {
+                 const max = Math.ceil((data.recentCollections?.length || 0) / itemsPerPage);
+                 return Math.min(max, p + 1);
+               })}
+             >
+               Next
+             </button>
+           </div>
+         </div>
+       )}
 
       <div className="mb-8 grid gap-4 lg:grid-cols-2">
         <div className="stat-card">
