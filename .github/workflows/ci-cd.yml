@@ -1,10 +1,9 @@
-name: CI/CD Pipeline
+name: Backend CI/CD
 
 on:
   push:
     branches: [main]
     paths:
-      - 'Frontend/**'
       - 'Backend/**'
       - '.github/workflows/**'
       - 'package.json'
@@ -15,7 +14,6 @@ jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      frontend: ${{ steps.filter.outputs.frontend }}
       backend: ${{ steps.filter.outputs.backend }}
     steps:
       - uses: actions/checkout@v4
@@ -23,8 +21,6 @@ jobs:
         id: filter
         with:
           filters: |
-            frontend:
-              - 'Frontend/**'
             backend:
               - 'Backend/**'
               - '.github/workflows/**'
@@ -32,63 +28,6 @@ jobs:
               - 'package-lock.json'
               - 'render.yaml'
 
-  # ============ FRONTEND LANE ============
-  frontend-verify:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.frontend == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-      - name: Install deps
-        working-directory: Frontend       # ← Capital F
-        run: npm ci
-      - name: Lint & Test
-        working-directory: Frontend
-        run: |
-          npm run lint
-          npm run test
-      - name: Build
-        working-directory: Frontend
-        run: npm run build
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: Frontend/dist
-
-  frontend-e2e:
-    needs: frontend-verify
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: frontend-build
-          path: Frontend/dist
-      - name: Run E2E (Playwright)
-        working-directory: Frontend
-        run: |
-          npm ci
-          npx playwright test
-
-  frontend-deploy:
-    needs: frontend-e2e
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy Frontend/dist --project-name=church-app
-
-  # ============ BACKEND LANE ============
   backend-verify:
     needs: detect-changes
     if: needs.detect-changes.outputs.backend == 'true'
