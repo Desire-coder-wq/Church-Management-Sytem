@@ -3,8 +3,12 @@ services:
     name: church-backend-api
     runtime: node
     rootDir: Backend         
-    buildCommand: npm install
-    startCommand: npm start
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.20.0
     buildFilter:
       paths:
         - Backend/**         

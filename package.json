@@ -1,6 +1,9 @@
 {
   "name": "church-pledge-management-system",
   "private": true,
+  "engines": {
+    "node": ">=22 <23"
+  },
   "workspaces": [
     "Backend",
     "Frontend"

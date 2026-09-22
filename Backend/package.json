@@ -1,11 +1,16 @@
 {
   "name": "church-pledge-api",
   "private": true,
+  "engines": {
+    "node": ">=22 <23"
+  },
   "scripts": {
     "build": "nest build",
+    "lint": "tsc --noEmit",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
     "test": "jest --runInBand",
+    "test:e2e": "jest --config jest.e2e.config.js --runInBand",
     "test:cov": "jest --coverage --runInBand",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
