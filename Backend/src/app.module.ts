@@ -14,6 +14,7 @@ import { CollectionsController } from "./collections/collections.controller";
 import { CollectionsService } from "./collections/collections.service";
 import { DashboardController } from "./dashboard/dashboard.controller";
 import { ReportsController } from "./reports/reports.controller";
+import { HealthController } from "./health/health.controller";
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { ReportsController } from "./reports/reports.controller";
     CollectionsController,
     DashboardController,
     ReportsController,
+    HealthController,
   ],
   providers: [
     PrismaService,
