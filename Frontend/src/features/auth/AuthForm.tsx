@@ -16,6 +16,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { api, getError } from "../../api/client";
 import { useAuthStore } from "../../stores/auth-store";
+import churchImage from "../../../Assets/Images/Church.jpg";
 
 export function AuthForm({ signup = false }: { signup?: boolean }) {
   const [form, setForm] = useState({
@@ -100,10 +101,9 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
         {/* Background Image Overlay */}
         <div 
           className="absolute inset-0 z-0 opacity-20 bg-cover bg-center"
-          style={{ backgroundImage: "url('/Assets/Images/Church.jpg')" }}
+          style={{ backgroundImage: `url(${churchImage})` }}
         ></div>
-        {/* Gradient Overlay for better text readability */}
-        <div className="absolute inset-0 z-0 bg-gradient-to-t from-navy via-navy/80 to-navy/40"></div>
+        <div className="absolute inset-0 z-0 bg-navy/80"></div>
 
         <div className="relative z-10">
           <Link to="/" className="flex items-center gap-3 text-xl font-semibold">

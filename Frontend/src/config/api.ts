@@ -1,7 +1,12 @@
 const LIVE_API_URL = "https://church-management-sytem.onrender.com/api";
 
 function normalizeApiUrl(value: string): string {
-  return value.trim().replace(/\/+$/, "");
+  const url = new URL(value.trim());
+  const path = url.pathname.replace(/\/+$/, "");
+  if (path && path !== "/api") {
+    throw new Error("VITE_API_URL must be the backend origin or its /api URL.");
+  }
+  return `${url.origin}/api`;
 }
 
 /**

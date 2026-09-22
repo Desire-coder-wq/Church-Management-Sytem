@@ -9,6 +9,7 @@ import {
   faArrowRight,
 } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
+import churchImage from "../../Assets/Images/Church.jpg";
 
 export function LandingPage() {
   return (
@@ -84,13 +85,13 @@ export function LandingPage() {
         </div>
 
         {/* Right Image & Overlays */}
-        <div className="relative mt-12 hidden lg:mt-0 lg:block">
+        <div className="relative mt-12 lg:mt-0">
           {/* Background Circle Shape */}
           <div className="absolute -right-20 -top-20 h-[600px] w-[600px] rounded-full bg-slate-100/50"></div>
           
           {/* Church Image */}
           <img 
-            src="/Assets/Images/Church.jpg" 
+            src={churchImage}
             alt="Church building" 
             className="relative z-10 h-full w-full rounded-bl-[100px] object-cover shadow-xl"
           />
