@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: your-backend-api
+    rootDir: Backend
+    buildCommand: npm install
+    startCommand: npm start
+    buildFilter:
+      paths:
+        - backend/**
