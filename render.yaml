@@ -1,9 +1,10 @@
 services:
   - type: web
-    name: your-backend-api
-    rootDir: Backend
+    name: church-backend-api
+    runtime: node
+    rootDir: Backend         
     buildCommand: npm install
     startCommand: npm start
     buildFilter:
       paths:
-        - backend/**
+        - Backend/**         

@@ -4,11 +4,10 @@ on:
   push:
     branches: [main]
     paths:
-      - 'frontend/**'
-      - 'backend/**'
+      - 'Frontend/**'
+      - 'Backend/**'
 
 jobs:
-  # ============ CHANGE DETECTION ============
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
@@ -21,9 +20,9 @@ jobs:
         with:
           filters: |
             frontend:
-              - 'frontend/**'
+              - 'Frontend/**'
             backend:
-              - 'backend/**'
+              - 'Backend/**'
 
   # ============ FRONTEND LANE ============
   frontend-verify:
@@ -36,21 +35,21 @@ jobs:
         with:
           node-version: '20'
       - name: Install deps
-        working-directory: frontend
+        working-directory: Frontend       # ← Capital F
         run: npm ci
       - name: Lint & Test
-        working-directory: frontend
+        working-directory: Frontend
         run: |
           npm run lint
           npm run test
       - name: Build
-        working-directory: frontend
+        working-directory: Frontend
         run: npm run build
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
-          path: frontend/dist
+          path: Frontend/dist
 
   frontend-e2e:
     needs: frontend-verify
@@ -61,9 +60,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: frontend-build
-          path: frontend/dist
+          path: Frontend/dist
       - name: Run E2E (Playwright)
-        working-directory: frontend
+        working-directory: Frontend
         run: |
           npm ci
           npx playwright test
@@ -78,7 +77,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy frontend/dist --project-name=your-project
+          command: pages deploy Frontend/dist --project-name=church-app
 
   # ============ BACKEND LANE ============
   backend-verify:
@@ -91,10 +90,10 @@ jobs:
         with:
           node-version: '20'
       - name: Install deps
-        working-directory: backend
+        working-directory: Backend        # ← Capital B
         run: npm ci
       - name: Lint & Test
-        working-directory: backend
+        working-directory: Backend
         run: |
           npm run lint
           npm run test
@@ -105,7 +104,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup & Run E2E
-        working-directory: backend
+        working-directory: Backend
         run: |
           npm ci
           npm run test:e2e
