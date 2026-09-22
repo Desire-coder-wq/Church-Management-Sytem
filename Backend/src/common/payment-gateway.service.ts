@@ -59,7 +59,7 @@ export class PaymentGatewayService {
     method: PaymentMethod,
     reference: string,
     phone?: string,
-  ): PaymentGatewayResult {
+  ): Promise<PaymentGatewayResult> {
     // Implementation for Paystack would go here
     return { success: false, error: 'Paystack integration not implemented' };
   }

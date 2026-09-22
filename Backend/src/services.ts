@@ -8,7 +8,7 @@ import { JwtService } from "@nestjs/jwt";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 import { PrismaClient, SmsStatus, SmsType } from "@prisma/client";
-import * as bcrypt from "bcrypt";
+import * as bcrypt from 'bcryptjs';
 @Injectable()
 export class PrismaService extends PrismaClient {}
 @Injectable()

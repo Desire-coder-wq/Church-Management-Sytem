@@ -26,7 +26,12 @@ async function main() {
     include: { church: true },
   });
 
-  console.log('Created admin:', admin.email, 'for church:', admin.church.name);
+  console.log('Created admin:', admin.email, 'for church:', admin.church?.name);
+
+  const churchId = admin.churchId;
+  if (!churchId) {
+    throw new Error('Seeded admin user must belong to a church.');
+  }
 
   // Create a staff user
   const staff = await prisma.user.upsert({
@@ -37,7 +42,7 @@ async function main() {
       fullName: 'Staff Member',
       passwordHash: await bcrypt.hash('Staff@123', 12),
       role: Role.STAFF,
-      churchId: admin.churchId,
+      churchId,
     },
   });
 
@@ -45,21 +50,21 @@ async function main() {
 
   // Create groups
   const youthGroup = await prisma.group.upsert({
-    where: { churchId_name: { churchId: admin.churchId, name: 'Youth Group' } },
+    where: { churchId_name: { churchId, name: 'Youth Group' } },
     update: {},
-    create: { churchId: admin.churchId, name: 'Youth Group', description: 'Young adults and teens' },
+    create: { churchId, name: 'Youth Group', description: 'Young adults and teens' },
   });
 
   const womenGroup = await prisma.group.upsert({
-    where: { churchId_name: { churchId: admin.churchId, name: 'Women Ministry' } },
+    where: { churchId_name: { churchId, name: 'Women Ministry' } },
     update: {},
-    create: { churchId: admin.churchId, name: 'Women Ministry', description: 'Women fellowship group' },
+    create: { churchId, name: 'Women Ministry', description: 'Women fellowship group' },
   });
 
   const menGroup = await prisma.group.upsert({
-    where: { churchId_name: { churchId: admin.churchId, name: 'Men Ministry' } },
+    where: { churchId_name: { churchId, name: 'Men Ministry' } },
     update: {},
-    create: { churchId: admin.churchId, name: 'Men Ministry', description: 'Men fellowship group' },
+    create: { churchId, name: 'Men Ministry', description: 'Men fellowship group' },
   });
 
   console.log('Created groups:', youthGroup.name, womenGroup.name, menGroup.name);
@@ -70,7 +75,7 @@ async function main() {
       where: { phone: '+256700123456' },
       update: {},
       create: {
-        churchId: admin.churchId,
+        churchId: churchId,
         fullName: 'John Doe',
         phone: '+256700123456',
         groupId: youthGroup.id,
@@ -80,7 +85,7 @@ async function main() {
       where: { phone: '+256700123457' },
       update: {},
       create: {
-        churchId: admin.churchId,
+        churchId: churchId,
         fullName: 'Jane Smith',
         phone: '+256700123457',
         groupId: womenGroup.id,
@@ -90,7 +95,7 @@ async function main() {
       where: { phone: '+256700123458' },
       update: {},
       create: {
-        churchId: admin.churchId,
+        churchId: churchId,
         fullName: 'Robert Johnson',
         phone: '+256700123458',
         groupId: menGroup.id,
@@ -102,10 +107,10 @@ async function main() {
 
   // Create campaigns
   const buildingFund = await prisma.campaign.upsert({
-    where: { churchId_name: { churchId: admin.churchId, name: 'Church Building Fund' } },
+    where: { churchId_name: { churchId: churchId, name: 'Church Building Fund' } },
     update: {},
     create: {
-      churchId: admin.churchId,
+      churchId: churchId,
       name: 'Church Building Fund',
       description: 'Fund for new church building construction',
       targetAmount: 500000000,
@@ -116,10 +121,10 @@ async function main() {
   });
 
   const missionFund = await prisma.campaign.upsert({
-    where: { churchId_name: { churchId: admin.churchId, name: 'Mission Support Fund' } },
+    where: { churchId_name: { churchId: churchId, name: 'Mission Support Fund' } },
     update: {},
     create: {
-      churchId: admin.churchId,
+      churchId: churchId,
       name: 'Mission Support Fund',
       description: 'Support for missionary work',
       targetAmount: 100000000,
