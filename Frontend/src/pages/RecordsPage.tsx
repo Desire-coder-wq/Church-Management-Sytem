@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { Plus, Search, X, Download } from "lucide-react";
 import { api, getError } from "../api/client";
 import { ugx } from "../utils/currency";
+import { useAuthStore } from "../stores/auth-store";
 
 type RecordRow = {
   id: string;
@@ -16,9 +17,14 @@ type RecordRow = {
   targetAmount?: number;
   dueDate?: string;
   paymentDate?: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
   member?: RecordRow;
   campaign?: RecordRow;
   pledge?: RecordRow;
+  pledges?: RecordRow[];
+  collections?: RecordRow[];
   group?: { name: string };
 };
 type Field = { key: string; label: string; type?: string; optional?: boolean };
@@ -74,6 +80,7 @@ const configs: Record<string, { title: string; singular: string; fields: Field[]
 
 export function RecordsPage({ resource }: { resource: string }) {
   const config = configs[resource];
+  const user = useAuthStore((state) => state.user);
   const [rows, setRows] = useState<RecordRow[]>([]);
   const [members, setMembers] = useState<RecordRow[]>([]);
   const [campaigns, setCampaigns] = useState<RecordRow[]>([]);
@@ -89,6 +96,7 @@ export function RecordsPage({ resource }: { resource: string }) {
   const [status, setStatus] = useState("");
   const [requestId, setRequestId] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
+  const [memberDetail, setMemberDetail] = useState<RecordRow | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -114,15 +122,18 @@ export function RecordsPage({ resource }: { resource: string }) {
     setErrors({});
     setSuccess("");
     setEditId(row?.id ?? null);
-    setForm(
-      row
-        ? {
-            fullName: row.fullName ?? "",
-            phone: row.phone ?? "",
-            group: row.group?.name ?? "",
-          }
-        : {},
-    );
+    setForm(row ? resource === "campaigns" ? {
+      name: row.name ?? "",
+      description: row.description ?? "",
+      targetAmount: String(row.targetAmount ?? ""),
+      startDate: row.startDate?.slice(0, 10) ?? "",
+      endDate: row.endDate?.slice(0, 10) ?? "",
+      status: row.status ?? "ACTIVE",
+    } : {
+      fullName: row.fullName ?? "",
+      phone: row.phone ?? "",
+      group: row.group?.name ?? "",
+    } : {});
     setRequestId(crypto.randomUUID());
     setOpen(true);
     try {
@@ -173,7 +184,29 @@ export function RecordsPage({ resource }: { resource: string }) {
     setBusy(true);
     try {
       if (editId) await api.patch(`/${resource}/${editId}`, payload);
-      else await api.post(`/${resource}`, payload);
+      else {
+        const { data: saved } = await api.post(`/${resource}`, payload);
+        try {
+          if (resource === "pledges") {
+            await api.post("/notifications/send/pledge-created", {
+              memberId: saved.member.id,
+              campaignName: saved.campaign.name,
+              amount: saved.amount,
+              dueDate: saved.dueDate,
+            });
+          }
+          if (resource === "collections" && selected) {
+            const balance = Number(selected.balance) - Number(payload.amount);
+            await api.post(balance <= 0 ? "/notifications/send/fully-paid" : "/notifications/send/payment-received", {
+              memberId: selected.member?.id,
+              campaignName: selected.campaign?.name,
+              ...(balance > 0 ? { amount: Number(payload.amount), balance } : {}),
+            });
+          }
+        } catch (notificationFailure) {
+          setError(`The record was saved, but the SMS could not be sent. ${getError(notificationFailure)}`);
+        }
+      }
       setOpen(false);
       setSuccess(`${config.singular[0].toUpperCase() + config.singular.slice(1)} saved successfully.`);
       await load();
@@ -181,6 +214,45 @@ export function RecordsPage({ resource }: { resource: string }) {
       setError(getError(failure));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function sendReminder(row: RecordRow) {
+    setError("");
+    setSuccess("");
+    try {
+      await api.post("/notifications/send/payment-reminder", {
+        memberId: row.member?.id,
+        campaignName: row.campaign?.name,
+        balance: Number(row.balance),
+        dueDate: row.dueDate,
+      });
+      setSuccess(`Payment reminder sent to ${row.member?.fullName}.`);
+    } catch (failure) {
+      setError(getError(failure));
+    }
+  }
+
+  async function retryFailed() {
+    setBusy(true);
+    setError("");
+    try {
+      await api.post("/notifications/retry-failed");
+      setSuccess("Failed notifications were queued for retry.");
+      await load();
+    } catch (failure) {
+      setError(getError(failure));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function viewMember(id: string) {
+    setError("");
+    try {
+      setMemberDetail((await api.get(`/members/${id}`)).data);
+    } catch (failure) {
+      setError(getError(failure));
     }
   }
 
@@ -250,6 +322,11 @@ export function RecordsPage({ resource }: { resource: string }) {
               </button>
             ))}
           </div>
+        )}
+        {resource === "notifications" && user?.role === "ADMIN" && (
+          <button disabled={busy} className="btn border border-line bg-white" onClick={() => void retryFailed()}>
+            Retry failed SMS
+          </button>
         )}
       </div>
       {success && <p role="status" className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-success">{success}</p>}
@@ -328,9 +405,18 @@ export function RecordsPage({ resource }: { resource: string }) {
                      </span>
                    </td>
                    <td className="p-4">
-                     {!isReadOnly && resource === "members" && (
-                       <button className="font-medium text-navy" onClick={() => void start(row)}>
-                         Edit
+                     {resource === "members" && (
+                       <div className="flex gap-3">
+                         <button className="font-medium text-navy" onClick={() => void viewMember(row.id)}>View</button>
+                         {user?.role === "ADMIN" && <button className="font-medium text-navy" onClick={() => void start(row)}>Edit</button>}
+                       </div>
+                     )}
+                     {resource === "campaigns" && user?.role === "ADMIN" && (
+                       <button className="font-medium text-navy" onClick={() => void start(row)}>Edit</button>
+                     )}
+                     {resource === "pledges" && row.balance !== undefined && row.balance > 0 && user?.role === "ADMIN" && (
+                       <button className="font-medium text-navy" onClick={() => void sendReminder(row)}>
+                         Send reminder
                        </button>
                      )}
                    </td>
@@ -380,6 +466,27 @@ export function RecordsPage({ resource }: { resource: string }) {
            </div>
          )}
       </div>
+      {memberDetail && resource === "members" && (
+        <section className="mt-6 rounded-xl border border-line bg-white p-6" aria-label="Member details">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold">{memberDetail.fullName}</h2>
+              <p className="mt-1 text-sm text-muted">{memberDetail.phone} · {memberDetail.group?.name}</p>
+            </div>
+            <button aria-label="Close member details" onClick={() => setMemberDetail(null)}><X size={20} /></button>
+          </div>
+          <div className="mt-5 space-y-3">
+            {(memberDetail.pledges ?? []).map((pledge) => {
+              const paid = (pledge.collections ?? []).reduce((sum, collection) => sum + Number(collection.amount), 0);
+              return <div key={pledge.id} className="flex flex-wrap justify-between gap-3 rounded-lg border border-line p-4 text-sm">
+                <span className="font-medium">{pledge.campaign?.name}</span>
+                <span className="text-muted">Paid {ugx(paid)} of {ugx(Number(pledge.amount))}</span>
+              </div>;
+            })}
+            {!memberDetail.pledges?.length && <p className="text-sm text-muted">This member has no pledges yet.</p>}
+          </div>
+        </section>
+      )}
       {open && !isReadOnly && (
         <div className="mt-6 rounded-xl border border-line bg-white p-6">
           <div className="mb-6 flex items-center justify-between">
