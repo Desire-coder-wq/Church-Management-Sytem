@@ -26,6 +26,7 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
     email: "",
     password: "",
     confirmPassword: "",
+    acceptedTerms: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState("");
@@ -64,6 +65,7 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
       (!form.confirmPassword || form.confirmPassword !== form.password)
     )
       next.confirmPassword = "Enter the same password again.";
+    if (signup && !form.acceptedTerms) next.acceptedTerms = "Please accept the terms and privacy notice";
     setErrors(next);
     setNotice("");
     if (Object.keys(next).length) return;
@@ -76,6 +78,7 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
             fullName: form.fullName.trim(),
             email: form.email.trim().toLowerCase(),
             password: form.password,
+            acceptedTerms: form.acceptedTerms,
           }
         : { email: form.email.trim().toLowerCase(), password: form.password };
       const { data } = await api.post(
@@ -98,7 +101,7 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
     }
   }
 
-  const names: (keyof typeof form)[] = signup
+  const names: ("churchName" | "fullName" | "email" | "password" | "confirmPassword")[] = signup
     ? ["churchName", "fullName", "email", "password", "confirmPassword"]
     : ["email", "password"];
   const labels = {
@@ -179,7 +182,7 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
       </aside>
 
       {/* Right Side - Form */}
-      <section className="flex items-center justify-center bg-white px-6 py-10">
+      <section className="flex items-center justify-center bg-white px-4 py-8 sm:px-6 sm:py-10">
         <div className="w-full max-w-md">
           <Link
             to="/"
@@ -209,7 +212,7 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
 
           {busy && waitingForServer && (
             <p role="status" className="mb-5 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-              The server is responding slowly. Please keep this page open while we finish your request.
+              Still signing you in. This can take a moment if the server is waking up
             </p>
           )}
 
@@ -280,6 +283,8 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
               </div>
             ))}
 
+            {signup && <div><label className="flex items-start gap-3 text-sm text-slate-600"><input type="checkbox" className="mt-1" checked={form.acceptedTerms} onChange={(event) => setForm({ ...form, acceptedTerms: event.target.checked })} /><span>I agree to the <Link to="/terms" className="font-semibold text-navy underline">terms of use</Link> and have read the <Link to="/privacy" className="font-semibold text-navy underline">privacy notice</Link></span></label>{errors.acceptedTerms && <p role="alert" className="mt-1 text-xs text-danger">{errors.acceptedTerms}</p>}</div>}
+
             <button 
               disabled={busy} 
               className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-navy py-3 font-semibold text-white transition-colors hover:bg-slate-800 disabled:opacity-70"
@@ -302,6 +307,7 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
               {signup ? "Sign in" : "Register your church"}
             </Link>
           </p>
+          <nav className="mt-6 flex justify-center gap-4 text-xs text-muted"><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link><Link to="/cookies">Cookies</Link></nav>
         </div>
       </section>
     </main>

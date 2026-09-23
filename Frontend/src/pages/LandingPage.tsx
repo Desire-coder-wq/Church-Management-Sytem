@@ -1,154 +1,21 @@
-import { useEffect } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faChurch,
-  faUsers,
-  faHeart,
-  faCreditCard,
-  faChartLine,
-  faBell,
-  faArrowRight,
-} from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
+import { ArrowRight, Bell, ChartNoAxesCombined, Church, CreditCard, HeartHandshake, Users } from "lucide-react";
 import churchImage from "../../Assets/Images/Church.jpg";
 import { api } from "../api/client";
+import { useEffect } from "react";
 
+const features = [
+  { title: "Members", description: "Keep member names, phone numbers and church groups in one place", Icon: Users },
+  { title: "Pledges", description: "See what has been promised, paid and is still due", Icon: HeartHandshake },
+  { title: "Payments", description: "Offer a Pesapal payment link and record verified payments", Icon: CreditCard },
+  { title: "Reports", description: "Review collections and export the records your team needs", Icon: ChartNoAxesCombined },
+];
 export function LandingPage() {
-  useEffect(() => {
-    void api.get("/health", { timeout: 120_000 }).catch(() => undefined);
-  }, []);
-
-  return (
-    <main className="min-h-screen bg-slate-50 font-sans">
-      {/* Header */}
-      <header className="mx-auto flex max-w-7xl items-center justify-between p-6">
-        <Link to="/" className="flex items-center gap-2 text-xl font-bold text-navy">
-          <FontAwesomeIcon icon={faChurch} className="text-gold text-2xl" />
-          Church Pledge Manager
-        </Link>
-        <nav className="hidden space-x-8 text-sm font-medium text-slate-600 md:flex">
-       
-  
-        </nav>
-        <Link to="/login" className="rounded-md bg-navy px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
-          Sign in
-        </Link>
-      </header>
-
-      {/* Hero Section */}
-      <section className="mx-auto max-w-7xl px-6 pt-10 pb-20 lg:grid lg:grid-cols-2 lg:gap-12 lg:pt-16">
-        {/* Left Content */}
-        <div className="flex flex-col justify-center">
-          <p className="mb-4 text-sm font-bold uppercase tracking-wider text-gold">
-            Fundraising Made Clear
-          </p>
-          <h1 className="text-5xl font-extrabold leading-tight text-navy md:text-6xl">
-            Every pledge.
-            <br />
-            Every collection.
-            <br />
-            <span className="text-gold">One trusted record.</span>
-          </h1>
-          <p className="mt-6 max-w-lg text-lg text-slate-600">
-            A secure workspace for church staff to manage members, campaigns,
-            payments and reminders.
-          </p>
-          
-          <div className="mt-8 flex gap-4">
-            <Link to="/signup" className="flex items-center gap-2 rounded-md bg-navy px-8 py-3 font-semibold text-white hover:bg-slate-800">
-              Get started <FontAwesomeIcon icon={faArrowRight} size="sm" />
-            </Link>
-           
-          </div>
-
-          {/* Stats/Features Row */}
-          <div className="mt-16 grid grid-cols-2 gap-6 border-t border-slate-200 pt-8 md:grid-cols-4">
-            <div>
-              <p className="text-xs font-semibold text-slate-500">Manage Members</p>
-              <div className="mt-2 flex items-center gap-2 text-lg font-bold text-navy">
-                <FontAwesomeIcon icon={faUsers} className="text-slate-400" /> 
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-500">Track Pledges</p>
-              <div className="mt-2 flex items-center gap-2 text-lg font-bold text-navy">
-                <FontAwesomeIcon icon={faHeart} className="text-slate-400" /> 
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-500">Process Payments</p>
-              <div className="mt-2 flex items-center gap-2 text-lg font-bold text-navy">
-                <FontAwesomeIcon icon={faCreditCard} className="text-slate-400" /> 
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-500">Grow Your Ministry</p>
-              <div className="mt-2 flex items-center gap-2 text-lg font-bold text-navy">
-                <FontAwesomeIcon icon={faChartLine} className="text-slate-400" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Image & Overlays */}
-        <div className="relative mt-12 lg:mt-0">
-          {/* Background Circle Shape */}
-          <div className="absolute -right-20 -top-20 h-[600px] w-[600px] rounded-full bg-slate-100/50"></div>
-          
-          {/* Church Image */}
-          <img 
-            src={churchImage}
-            alt="Church building" 
-            className="relative z-10 h-full w-full rounded-bl-[100px] object-cover shadow-xl"
-          />
-
-       
-
-   
-        </div>
-      </section>
-
-      {/* Bottom Features Bar */}
-      <section className="border-t border-slate-200 bg-white py-10">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-6 md:grid-cols-4">
-          <div className="flex gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-navy">
-              <FontAwesomeIcon icon={faUsers} />
-            </div>
-            <div>
-              <h4 className="font-bold text-navy">Manage Members</h4>
-
-            </div>
-          </div>
-          <div className="flex gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-navy">
-              <FontAwesomeIcon icon={faHeart} />
-            </div>
-            <div>
-              <h4 className="font-bold text-navy">Track Pledges</h4>
-         
-            </div>
-          </div>
-          <div className="flex gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-navy">
-              <FontAwesomeIcon icon={faCreditCard} />
-            </div>
-            <div>
-              <h4 className="font-bold text-navy">Process Payments</h4>
-
-            </div>
-          </div>
-          <div className="flex gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-navy">
-              <FontAwesomeIcon icon={faBell} />
-            </div>
-            <div>
-              <h4 className="font-bold text-navy">Send Reminders</h4>
-
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
-  );
+  useEffect(() => { void api.get("/health", { timeout: 90_000 }).catch(() => undefined); }, []);
+  return <main className="min-h-screen bg-slate-50 text-ink">
+    <header className="border-b border-line bg-white"><div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6"><Link to="/" className="flex items-center gap-2 font-bold text-navy sm:text-lg"><Church className="h-6 w-6 shrink-0 text-gold" />Church Pledge Manager</Link><Link to="/login" className="rounded-lg border border-navy px-4 py-2 text-sm font-semibold text-navy hover:bg-slate-50">Sign in</Link></div></header>
+    <section className="mx-auto grid max-w-7xl items-center gap-9 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-14 lg:py-20"><div><p className="text-sm font-bold uppercase tracking-widest text-gold">For church teams</p><h1 className="mt-5 text-4xl font-bold leading-tight text-navy sm:text-5xl lg:text-6xl">Give every pledge a clear record</h1><p className="mt-6 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">Manage members and campaigns, follow up on pledges and see collections as they happen. Keep your church team informed without losing track of the details</p><div className="mt-8 flex flex-wrap gap-3"><Link to="/signup" className="btn primary inline-flex items-center gap-2 px-6 py-3">Register your church <ArrowRight size={18} /></Link><Link to="/login" className="btn inline-flex items-center border border-line bg-white px-6 py-3 text-navy">Sign in</Link></div><div className="mt-9 flex items-start gap-3 rounded-xl border border-line bg-white p-4 text-sm text-slate-600"><Bell size={18} className="shrink-0 text-gold" /><p>Send reminders and view a clear payment history for each pledge</p></div></div><img src={churchImage} alt="Church building" className="h-64 w-full rounded-2xl object-cover sm:h-96 lg:h-[470px]" /></section>
+    <section className="border-t border-line bg-white px-4 py-14 sm:px-6"><div className="mx-auto max-w-7xl"><h2 className="text-2xl font-bold text-navy sm:text-3xl">The work your team does, in one place</h2><div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{features.map(({ title, description, Icon }) => <div key={title} className="rounded-xl border border-line bg-white p-5"><span className="inline-flex rounded-lg bg-slate-100 p-3 text-navy"><Icon size={22} /></span><h3 className="mt-5 font-semibold text-navy">{title}</h3><p className="mt-2 text-sm leading-6 text-muted">{description}</p></div>)}</div></div></section>
+    <footer className="bg-navy px-4 py-9 text-white sm:px-6"><div className="mx-auto flex max-w-7xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold">Church Pledge Manager</p><p className="mt-1 text-sm text-slate-300">Clear giving records for church teams</p></div><nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2 text-sm"><Link to="/privacy" className="hover:text-gold">Privacy</Link><Link to="/terms" className="hover:text-gold">Terms of use</Link><Link to="/cookies" className="hover:text-gold">Cookies</Link></nav></div></footer>
+  </main>;
 }

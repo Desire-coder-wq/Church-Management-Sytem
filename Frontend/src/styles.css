@@ -104,7 +104,7 @@ body {
 }
 
 .stat-value {
-  @apply mt-3 text-2xl font-bold text-slate-900;
+  @apply mt-3 min-w-0 break-words text-xl font-bold text-slate-900 sm:text-2xl;
 }
 
 .form-group {

@@ -1,102 +1,29 @@
-# Church Pledge Management System
+Church Pledge Manager
 
-A secure, responsive system for church staff to manage members, campaigns, pledges, collections, SMS notifications and reports.
+A church can register its own workspace, add members and groups, run campaigns, assign pledges and track collections. Staff can send SMS reminders and export reports to Excel or PDF. Members can use a payment link to pay through Pesapal.
 
-## Stack
+Technology
 
-- React, TypeScript and Tailwind CSS
-- NestJS REST API with Swagger
-- Prisma ORM with Neon PostgreSQL
-- Twilio-ready SMS adapter (mock mode for demonstration)
-- Jest for testing (unit, e2e)
+The frontend uses React, TypeScript, Vite and Tailwind CSS. The backend uses NestJS, Prisma and Neon PostgreSQL. Swagger documents the API. Twilio can send SMS when it is configured. Jest checks backend calculations, validation, authentication and API behavior.
 
-## Security
+Getting started
 
-JWT-protected API endpoints, bcrypt password hashing, request validation, Helmet headers, CORS, auth/request rate limiting, payment idempotency keys, unique transaction references and overpayment protection are included.
+Install dependencies from the project root with npm install. Copy Backend/.env.example to Backend/.env and add your Neon database URLs and a long JWT secret. Never commit this file. From Backend, run npx prisma generate and npx prisma db push. Then run npm run start:dev in Backend and npm run dev in Frontend. Register a church in the app. No sample data is added.
 
-## Features
+Live Pesapal payments
 
-### Backend (NestJS)
-- **Authentication**: JWT-based auth with signup/login, password hashing
-- **Authorization**: Role-based access control (ADMIN, STAFF)
-- **Members Management**: CRUD operations for church members with group assignment
-- **Campaigns Management**: Create and manage fundraising campaigns with targets
-- **Pledges Management**: Assign pledges to members with due dates
-- **Collections Management**: Record payments with idempotency protection
-- **Dashboard**: Real-time totals, upcoming/overdue pledges, recent collections
-- **Reports**: Filterable reports with Excel and PDF export
-- **Notifications**: SMS notifications via Twilio (mock mode available) with rate limiting
-- **Rate Limiting**: Throttler for API protection
-- **Payment Gateway**: Extensible payment gateway service (mock/Stripe/Flutterwave/Paystack)
+Put your live consumer key and secret only in Backend/.env and in the Render backend environment. Set PESAPAL_CHURCH_ID to the ID returned when the church administrator registers or signs in. The app limits these merchant credentials to that church. Set API_PUBLIC_URL to https://church-management-sytem.onrender.com/api and FRONTEND_URL to https://church-management-sytem.pages.dev. Read Backend/PESAPAL_SETUP.txt before accepting payments. Confirm that the Pesapal merchant settlement account belongs to the church. This app does not automatically connect a different merchant account for each church.
 
-### Frontend (React + Vite)
-- **Landing Page**: Public landing with signup/login
-- **Authentication**: Secure login/signup with validation
-- **Dashboard**: Visual cards for totals, tables for upcoming/overdue
-- **Members/Campaigns/Pledges/Collections**: Full CRUD with modal forms
-- **Notifications**: View SMS history with status
-- **Reports**: Filterable table with Excel/PDF export
-- **Responsive Design**: Mobile-first with Tailwind CSS
-- **Color Palette**: Navy/Gold professional theme
+The church administrator creates a payment link for a pledge. The member completes payment on Pesapal. The backend checks the transaction with Pesapal before recording a collection and prevents duplicate records. Cash and other offline collections can still be recorded separately.
 
-## Setup
+Running and checking the project
 
-1. Create `Backend/.env` with your Neon PostgreSQL `DATABASE_URL` and `DIRECT_URL`, plus a long unique `JWT_SECRET`. Keep this file private.
-2. Run `npm install` from the repository root.
-3. Run `npm run prisma:generate -w Backend`. From the `Backend` directory, run `npx prisma db push` to apply the schema to Neon, then return to the repository root.
-4. Start backend: `npm run start:dev -w Backend`
-5. Start frontend: `npm run dev -w Frontend`
+Use npm run build in Backend and Frontend before deployment. Run npm test and npm run test:e2e in Backend for automated tests. Swagger is available at https://church-management-sytem.onrender.com/api/docs. The frontend is hosted at https://church-management-sytem.pages.dev. Frontend/README.txt explains the frontend build and pages.
 
-The application does not require seed data. Register a church in the app to create its first administrator account.
+Security and privacy
 
-## API Documentation
+The API uses JWT authentication, password hashing, church scoped data access, input validation, rate limiting and security headers. Payment card details and mobile money PINs are entered with Pesapal, not stored by this app. The public site includes privacy, terms and cookies information.
 
-Swagger UI available at `http://localhost:3000/api/docs`
-
-## Testing
-
-```bash
-# Run all tests
-npm run test -w Backend
-
-# Run with coverage
-npm run test:cov -w Backend
-```
-
-## Environment Variables
-
-Set these variables in `Backend/.env` for local development and in your backend host's environment settings for deployment:
-
-- `DATABASE_URL`: Neon PostgreSQL connection string used by the running API
-- `DIRECT_URL`: Neon direct PostgreSQL connection string used by Prisma schema operations
-- `JWT_SECRET`: Long random string (32+ chars)
-- `SMS_PROVIDER`: `mock` or `twilio`
-- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`: Twilio credentials
-- `PAYMENT_GATEWAY`: `mock`, `stripe`, `flutterwave`, `paystack`
-- `FRONTEND_URL`: Frontend origin for CORS
-- `PORT`: Backend port (default 3000)
-
-The frontend uses `VITE_API_URL=https://church-management-sytem.onrender.com/api`. For a different backend, set `VITE_API_URL` in `Frontend/.env` or your frontend host's build environment. Vite reads this value at build time.
-
-## Color Palette
-
-| Purpose | Color | Hex |
-|---------|-------|-----|
-| Primary | Deep Navy | #1E3A5F |
-| Secondary | Warm Gold | #D4A017 |
-| Background | Light | #F8FAFC |
-| Cards | White | #FFFFFF |
-| Main Text | Dark Slate | #1E293B |
-| Secondary Text | Gray | #64748B |
-| Success | Green | #16A34A |
-| Warning | Amber | #F59E0B |
-| Danger | Red | #DC2626 |
-| Borders | Light Gray | #E2E8F0 |
-
-## Font
-
-Inter (400, 500, 600, 700) from Google Fonts
-
-## License
+License
 
 MIT

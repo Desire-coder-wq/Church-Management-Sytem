@@ -6,7 +6,6 @@ import { Alert } from "../components/Alert";
 type Stat = {
   label: string;
   value: string | number;
-  icon?: string;
 };
 
 export function DashboardPage() {
@@ -43,12 +42,12 @@ export function DashboardPage() {
   if (!data) return <p className="text-muted">Loading live dashboard…</p>;
 
   const stats: Stat[] = [
-    { label: "Total Members", value: data.members, icon: "👥" },
-    { label: "Active Campaigns", value: data.activeCampaigns, icon: "🏁" },
-    { label: "Target", value: ugx(data.target), icon: "🎯" },
-    { label: "Pledged", value: ugx(data.pledged), icon: "🤝" },
-    { label: "Collected", value: ugx(data.paid), icon: "💰" },
-    { label: "Outstanding", value: ugx(data.outstanding), icon: "⏳" },
+    { label: "Total Members", value: data.members },
+    { label: "Active Campaigns", value: data.activeCampaigns },
+    { label: "Target", value: ugx(data.target) },
+    { label: "Pledged", value: ugx(data.pledged) },
+    { label: "Collected", value: ugx(data.paid) },
+    { label: "Outstanding", value: ugx(data.outstanding) },
   ];
 
   const statusColor = (status: string) => {
@@ -62,14 +61,14 @@ export function DashboardPage() {
     <>
       <div className="page-header">
         <h1 className="page-title">Dashboard</h1>
-        <p className="page-subtitle">Live totals from your church workspace.</p>
+        <p className="page-subtitle">Live totals from your church workspace</p>
       </div>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         {stats.map((stat, i) => (
           <div key={i} className="stat-card">
             <p className="stat-label">{stat.label}</p>
-            <p className="stat-value">{stat.value}</p>
+            <p className="stat-value" title={String(stat.value)}>{stat.value}</p>
           </div>
         ))}
       </div>
@@ -78,7 +77,7 @@ export function DashboardPage() {
         <div className="border-b border-line p-4">
           <h2 className="section-title">Recent Collections</h2>
         </div>
-        <table className="table">
+        <div className="overflow-x-auto"><table className="table">
           <thead className="table-header">
             <tr>
               <th className="table-cell">Member</th>
@@ -95,7 +94,7 @@ export function DashboardPage() {
                   <td className="table-cell font-medium">{c.member?.fullName ?? "—"}</td>
                   <td className="table-cell text-muted">{c.campaign?.name ?? "—"}</td>
                   <td className="table-cell">{ugx(Number(c.amount))}</td>
-                  <td className="table-cell text-muted">{c.method?.replaceAll("_", " ")}</td>
+                  <td className="table-cell text-muted">{c.gatewayMethod || c.method?.replaceAll("_", " ")}</td>
                   <td className="table-cell text-muted">{new Date(c.paymentDate).toLocaleDateString()}</td>
                 </tr>
               ))
@@ -107,7 +106,7 @@ export function DashboardPage() {
               </tr>
             )}
            </tbody>
-         </table>
+         </table></div>
        </div>
        {data.recentCollections?.length > itemsPerPage && (
          <div className="flex items-center justify-between border-t border-line px-4 py-3">

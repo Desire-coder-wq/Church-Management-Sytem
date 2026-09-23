@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Plus, Search, X, Download } from "lucide-react";
 import { api, getError } from "../api/client";
 import { ugx } from "../utils/currency";
@@ -26,6 +27,13 @@ type RecordRow = {
   pledges?: RecordRow[];
   collections?: RecordRow[];
   group?: { name: string };
+  gateway?: string;
+  gatewayMethod?: string;
+  gatewayConfirmationCode?: string;
+  gatewayTrackingId?: string;
+  reversedAt?: string | null;
+  method?: string;
+  referenceNumber?: string;
 };
 type Field = { key: string; label: string; type?: string; optional?: boolean };
 const configs: Record<string, { title: string; singular: string; fields: Field[] }> = {
@@ -304,15 +312,18 @@ export function RecordsPage({ resource }: { resource: string }) {
               ? "Review pledge balances and download your records."
               : resource === "notifications"
               ? "View SMS notification history for your church."
-              : `Manage your church’s ${config.title.toLowerCase()} in one place.`}
+              : resource === "collections"
+              ? "Pesapal payments appear here after verification. Record cash or other offline collections separately"
+              : `Manage your church’s ${config.title.toLowerCase()} in one place`}
           </p>
         </div>
         {!isReadOnly && config.fields.length > 0 && (
           <button className="btn primary inline-flex items-center gap-2" onClick={() => void start()}>
             <Plus size={17} />
-            Add {config.singular}
+            {resource === "collections" ? "Record offline collection" : `Add ${config.singular}`}
           </button>
         )}
+        {resource === "collections" && <Link className="btn primary" to="/payments">Create online payment link</Link>}
         {resource === "reports" && (
           <div className="flex gap-2">
             {["xlsx", "pdf"].map((type) => (
@@ -380,8 +391,9 @@ export function RecordsPage({ resource }: { resource: string }) {
                      {row.fullName ?? row.name ?? row.member?.fullName ?? row.pledge?.member?.fullName ?? "Notification"}
                    </td>
                    <td className="p-4 text-muted">
-                     {row.phone ?? row.campaign?.name ?? row.pledge?.campaign?.name ?? row.message ?? "—"}
+                     {row.phone ?? row.campaign?.name ?? row.pledge?.campaign?.name ?? row.message ?? "None"}
                      {row.group && <span className="block text-xs">{row.group.name}</span>}
+                     {resource === "collections" && <><span className="block text-xs">{row.gatewayMethod || row.method?.replaceAll("_", " ") || "Method not recorded"}</span>{row.gateway && <span className="block text-xs">Verified by {row.gateway}</span>}</>}
                    </td>
                    <td className="p-4">
                      {row.balance !== undefined ? (
@@ -401,7 +413,7 @@ export function RecordsPage({ resource }: { resource: string }) {
                      <span
                        className={`rounded-full px-2 py-1 text-xs font-medium ${row.status === "PAID" || row.status === "SENT" ? "bg-green-50 text-success" : row.status === "OVERDUE" || row.status === "FAILED" ? "bg-red-50 text-danger" : "bg-slate-100 text-muted"}`}
                      >
-                       {row.status?.replaceAll("_", " ") ?? "Active"}
+                       {row.reversedAt ? "Reversed" : row.status?.replaceAll("_", " ") ?? "Active"}
                      </span>
                    </td>
                    <td className="p-4">
@@ -415,10 +427,11 @@ export function RecordsPage({ resource }: { resource: string }) {
                        <button className="font-medium text-navy" onClick={() => void start(row)}>Edit</button>
                      )}
                      {resource === "pledges" && row.balance !== undefined && row.balance > 0 && user?.role === "ADMIN" && (
-                       <button className="font-medium text-navy" onClick={() => void sendReminder(row)}>
-                         Send reminder
-                       </button>
+                       <div className="flex flex-wrap gap-3"><button className="font-medium text-navy" onClick={() => void sendReminder(row)}>Send reminder</button><Link className="font-medium text-navy" to={`/payments?pledge=${encodeURIComponent(row.id)}`}>Payment link</Link></div>
                      )}
+                     {resource === "collections" && <span className="block max-w-52 break-all text-xs text-muted">{row.gatewayConfirmationCode || row.referenceNumber || "No reference"}</span>}
+                     {resource === "notifications" && <span className="text-xs text-muted">{row.status === "FAILED" ? "Ask an administrator to retry" : "View status"}</span>}
+                     {resource === "reports" && <span className="text-xs text-muted">Included in export</span>}
                    </td>
                  </tr>
                ))}
@@ -477,7 +490,7 @@ export function RecordsPage({ resource }: { resource: string }) {
           </div>
           <div className="mt-5 space-y-3">
             {(memberDetail.pledges ?? []).map((pledge) => {
-              const paid = (pledge.collections ?? []).reduce((sum, collection) => sum + Number(collection.amount), 0);
+              const paid = (pledge.collections ?? []).filter((collection) => !collection.reversedAt).reduce((sum, collection) => sum + Number(collection.amount), 0);
               return <div key={pledge.id} className="flex flex-wrap justify-between gap-3 rounded-lg border border-line p-4 text-sm">
                 <span className="font-medium">{pledge.campaign?.name}</span>
                 <span className="text-muted">Paid {ugx(paid)} of {ugx(Number(pledge.amount))}</span>
