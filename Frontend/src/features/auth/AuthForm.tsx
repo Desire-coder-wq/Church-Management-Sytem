@@ -1,5 +1,6 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { 
   faEye, 
@@ -30,8 +31,14 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
   const [notice, setNotice] = useState("");
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [waitingForServer, setWaitingForServer] = useState(false);
   const navigate = useNavigate();
   const setSession = useAuthStore((state) => state.setSession);
+
+  useEffect(() => {
+    // Start a sleeping API while the user is filling in the form.
+    void api.get("/health", { timeout: 90_000 }).catch(() => undefined);
+  }, []);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -61,6 +68,7 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
     setNotice("");
     if (Object.keys(next).length) return;
     setBusy(true);
+    const waitingTimer = window.setTimeout(() => setWaitingForServer(true), 8_000);
     try {
       const payload = signup
         ? {
@@ -73,12 +81,19 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
       const { data } = await api.post(
         signup ? "/auth/signup" : "/auth/login",
         payload,
+        { timeout: 120_000 },
       );
       setSession(data.accessToken, data.user);
       navigate("/dashboard");
     } catch (error) {
-      setNotice(getError(error));
+      if (signup && axios.isAxiosError(error) && !error.response) {
+        setNotice("We could not confirm whether registration completed. Try signing in with this email before submitting the registration form again.");
+      } else {
+        setNotice(getError(error));
+      }
     } finally {
+      window.clearTimeout(waitingTimer);
+      setWaitingForServer(false);
       setBusy(false);
     }
   }
@@ -189,6 +204,12 @@ export function AuthForm({ signup = false }: { signup?: boolean }) {
               className="mb-5 rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-100"
             >
               {notice}
+            </p>
+          )}
+
+          {busy && waitingForServer && (
+            <p role="status" className="mb-5 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+              The server is responding slowly. Please keep this page open while we finish your request.
             </p>
           )}
 

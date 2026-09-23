@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChurch,
@@ -10,8 +11,13 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
 import churchImage from "../../Assets/Images/Church.jpg";
+import { api } from "../api/client";
 
 export function LandingPage() {
+  useEffect(() => {
+    void api.get("/health", { timeout: 120_000 }).catch(() => undefined);
+  }, []);
+
   return (
     <main className="min-h-screen bg-slate-50 font-sans">
       {/* Header */}

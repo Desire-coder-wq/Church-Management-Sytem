@@ -4,7 +4,7 @@ import { API_URL } from '../config/api';
 
 export const api = axios.create({
   baseURL: API_URL,
-  timeout: 30000,
+  timeout: 45000,
 });
 api.interceptors.request.use(config => {
   const token = useAuthStore.getState().token;
@@ -13,7 +13,12 @@ api.interceptors.request.use(config => {
 });
 export function getError(error: unknown): string {
   if (!axios.isAxiosError(error)) return 'The request could not be processed. Reload the page and retry.';
-  if (!error.response) return 'Cannot reach the server. Check your connection and make sure the backend is running.';
+  if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+    return 'The server took too long to respond. Please wait a moment and try again.';
+  }
+  if (!error.response) {
+    return 'The browser could not connect to the API. Check your internet connection and try again.';
+  }
   const message = error.response.data?.message;
   if (Array.isArray(message)) return message.join(' ');
   if (typeof message === 'string') return message;
