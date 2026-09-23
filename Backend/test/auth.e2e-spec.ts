@@ -59,6 +59,7 @@ describe('AuthController (e2e) - with mocked Prisma', () => {
           password: 'Password123',
           fullName: 'Test User',
           churchName: 'Test Church',
+          acceptedTerms: true,
         })
         .expect(201);
 
@@ -76,6 +77,7 @@ describe('AuthController (e2e) - with mocked Prisma', () => {
           password: 'Password123',
           fullName: 'Test User',
           churchName: 'Test Church',
+          acceptedTerms: true,
         })
         .expect(409);
     });
@@ -111,6 +113,11 @@ describe('AuthController (e2e) - with mocked Prisma', () => {
   });
 
   describe('POST /auth/signup - validation', () => {
+    it('requires agreement to the terms and privacy notice', async () => {
+      await request(app.getHttpServer()).post('/auth/signup').send({
+        email: 'test@example.com', password: 'Password123', fullName: 'Test User', churchName: 'Test Church',
+      }).expect(400);
+    });
     it('should return 400 when password is too weak', async () => {
       await request(app.getHttpServer())
         .post('/auth/signup')

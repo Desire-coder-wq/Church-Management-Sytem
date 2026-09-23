@@ -1,0 +1,19 @@
+Live Pesapal setup
+
+Keep the consumer key and consumer secret in Backend/.env on your computer. Add the same names and values in Render under the backend service Environment page. Never put either value in Frontend/.env, Cloudflare Pages or GitHub.
+
+Copy the blank Pesapal lines from Backend/.env.example into Backend/.env. Replace the blank part after each equals sign with the actual value. Do not add square brackets. Do not paste the values into a chat or a screenshot.
+
+PESAPAL_CONSUMER_KEY=your_actual_live_key
+PESAPAL_CONSUMER_SECRET=your_actual_live_secret
+PESAPAL_CHURCH_ID=the_church_id_returned_after_signup
+API_PUBLIC_URL=https://church-management-sytem.onrender.com/api
+FRONTEND_URL=https://church-management-sytem.pages.dev
+
+The church ID is in the user object returned when that church registers or signs in. It also appears in the browser's saved session. Do not use the ID of a different church. These credentials are deliberately allowed to collect payments for only that one church. Before enabling them, confirm in your Pesapal merchant dashboard that the settlement bank or mobile money account belongs to that church. A different church needs its own onboarding and credentials. The current application does not onboard multiple Pesapal merchants automatically.
+
+PESAPAL_IPN_ID is optional. When it is blank, the backend registers its public notification URL with Pesapal. The backend must be reachable over HTTPS. If registration fails, confirm that the merchant account permits API 3.0 live access and notification URL registration.
+
+The payment button redirects to Pesapal. The return URL and notification are not treated as proof of payment. The backend calls Pesapal's transaction status API, checks the amount, currency and reference, then records a collection once. A reversal removes the amount from the pledge's paid balance. Administrators can see the payment method in Collections and the Payments page.
+
+To deploy, commit and push the source yourself, then let Render rebuild the backend and Cloudflare Pages rebuild the frontend. The Neon tables were already updated in this workspace. Do not put real credentials in a commit.

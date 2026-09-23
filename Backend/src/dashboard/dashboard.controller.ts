@@ -27,7 +27,7 @@ export class DashboardController {
     const paid = rows.reduce((s, p) => s + p.paid, 0);
     const target = campaigns.reduce((s, c) => s + Number(c.targetAmount), 0);
     const collections = rows.flatMap((row) =>
-      row.collections.map((collection) => ({
+      row.collections.filter((collection) => !collection.reversedAt).map((collection) => ({
         ...collection,
         member: row.member,
         campaign: row.campaign,

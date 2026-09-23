@@ -19,6 +19,7 @@ export class AuthService {
     churchName: string,
     email: string,
     password: string,
+    acceptedTerms = false,
   ) {
     if (await this.prisma.user.findUnique({ where: { email } })) {
       throw new ConflictException(
@@ -31,6 +32,7 @@ export class AuthService {
         email,
         passwordHash: await bcrypt.hash(password, 12),
         role: "ADMIN",
+        acceptedTermsAt: acceptedTerms ? new Date() : null,
         church: { create: { name: churchName } },
       },
       include: { church: true },

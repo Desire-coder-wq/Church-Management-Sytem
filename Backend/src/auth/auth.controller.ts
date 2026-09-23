@@ -12,6 +12,7 @@ export class AuthController {
       dto.churchName,
       dto.email,
       dto.password,
+      dto.acceptedTerms,
     );
   }
   @Post("login") login(@Body() dto: LoginDto) {

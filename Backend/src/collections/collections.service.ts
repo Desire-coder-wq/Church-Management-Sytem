@@ -56,7 +56,7 @@ export class CollectionsService {
         where: { id: dto.pledgeId },
         include: { collections: true },
       });
-      const paid = pledge.collections.reduce(
+      const paid = pledge.collections.filter((row) => !row.reversedAt).reduce(
         (sum, row) => sum.plus(row.amount),
         new Prisma.Decimal(0),
       );

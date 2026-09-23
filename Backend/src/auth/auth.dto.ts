@@ -1,6 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
 import {
+  Equals,
   IsEmail,
   IsString,
   Matches,
@@ -23,6 +24,9 @@ export class LoginDto {
   password!: string;
 }
 export class SignupDto extends LoginDto {
+  @ApiProperty({ description: 'The administrator agrees to the terms and privacy notice', example: true })
+  @Equals(true, { message: 'Accept the terms and privacy notice to register your church' })
+  acceptedTerms!: boolean;
   @ApiProperty()
   @IsString()
   @MinLength(2)

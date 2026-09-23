@@ -15,6 +15,9 @@ import { CollectionsService } from "./collections/collections.service";
 import { DashboardController } from "./dashboard/dashboard.controller";
 import { ReportsController } from "./reports/reports.controller";
 import { HealthController } from "./health/health.controller";
+import { PesapalClient } from "./common/pesapal.client";
+import { PaymentsController } from "./collections/payments.controller";
+import { PaymentsService } from "./collections/payments.service";
 
 @Module({
   imports: [
@@ -28,6 +31,7 @@ import { HealthController } from "./health/health.controller";
     CampaignsController,
     PledgesController,
     CollectionsController,
+    PaymentsController,
     DashboardController,
     ReportsController,
     HealthController,
@@ -36,6 +40,8 @@ import { HealthController } from "./health/health.controller";
     PrismaService,
     PledgesService,
     CollectionsService,
+    PaymentsService,
+    PesapalClient,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_FILTER, useClass: DatabaseErrorsFilter },
   ],

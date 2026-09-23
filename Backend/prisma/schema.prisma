@@ -16,6 +16,7 @@ model Church {
   groups    Group[]
   members   Member[]
   users     User[]
+  paymentRequests PaymentRequest[]
 }
 
 model User {
@@ -29,6 +30,8 @@ model User {
   updatedAt    DateTime     @updatedAt
   churchId     String?
   collections  Collection[]
+  paymentRequests PaymentRequest[]
+  acceptedTermsAt DateTime?
   church       Church?      @relation(fields: [churchId], references: [id])
 
   @@index([email])
@@ -97,6 +100,7 @@ model Pledge {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   collections Collection[]
+  paymentRequests PaymentRequest[]
   campaign    Campaign     @relation(fields: [campaignId], references: [id])
   member      Member       @relation(fields: [memberId], references: [id])
 
@@ -116,6 +120,11 @@ model Collection {
   referenceNumber String?       @unique
   idempotencyKey  String        @unique
   notes           String?
+  gateway         String?
+  gatewayMethod   String?
+  gatewayTrackingId String? @unique
+  gatewayConfirmationCode String?
+  reversedAt      DateTime?
   recordedById    String
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -126,6 +135,30 @@ model Collection {
   @@index([paymentDate])
   @@index([method])
   @@index([recordedById])
+}
+
+model PaymentRequest {
+  id                String @id @default(cuid())
+  churchId          String
+  pledgeId          String
+  createdById       String
+  publicToken       String @unique
+  merchantReference String @unique
+  amount            Decimal @db.Decimal(14, 2)
+  status            PaymentRequestStatus @default(READY)
+  trackingId        String? @unique
+  checkoutUrl       String?
+  gatewayMethod     String?
+  expiresAt         DateTime
+  completedAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  church            Church @relation(fields: [churchId], references: [id])
+  pledge            Pledge @relation(fields: [pledgeId], references: [id])
+  createdBy         User @relation(fields: [createdById], references: [id])
+
+  @@index([churchId, createdAt])
+  @@index([pledgeId, status])
 }
 
 model SmsNotification {
@@ -169,8 +202,18 @@ enum PledgeStatus {
 enum PaymentMethod {
   CASH
   MOBILE_MONEY
+  CARD
   BANK_TRANSFER
   OTHER
+}
+
+enum PaymentRequestStatus {
+  READY
+  INITIATING
+  CHECKOUT
+  COMPLETED
+  FAILED
+  REVERSED
 }
 
 enum SmsType {
