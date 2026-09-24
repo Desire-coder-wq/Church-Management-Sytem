@@ -1,4 +1,4 @@
-import { BadGatewayException, Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { BadGatewayException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 const PESAPAL_API = 'https://pay.pesapal.com/v3/api';
@@ -22,10 +22,45 @@ export type PesapalStatus = {
 
 @Injectable()
 export class PesapalClient {
+  private readonly logger = new Logger(PesapalClient.name);
   private cachedToken?: { value: string; expiresAt: number };
   private cachedIpnId?: string;
 
   constructor(private readonly config: ConfigService) {}
+
+  private operation(path: string): string {
+    if (path.startsWith('/Auth/')) return 'authentication';
+    if (path.endsWith('/GetIpnList')) return 'notification URL lookup';
+    if (path.endsWith('/RegisterIPN')) return 'notification URL registration';
+    if (path.endsWith('/SubmitOrderRequest')) return 'order creation';
+    return 'transaction status check';
+  }
+
+  private providerMessage(value: unknown): string | undefined {
+    if (typeof value !== 'string') return undefined;
+    let message = value.slice(0, 220);
+    for (const key of ['PESAPAL_CONSUMER_KEY', 'PESAPAL_CONSUMER_SECRET']) {
+      const secret = this.config.get<string>(key);
+      if (secret) message = message.replaceAll(secret, '[redacted]');
+    }
+    return message.replace(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi, '[email]')
+      .replace(/\+?\d[\d\s-]{8,}\d/g, '[number]');
+  }
+
+  private rejected(path: string, status: number, body: unknown): never {
+    const payload = body && typeof body === 'object' && !Array.isArray(body)
+      ? body as Record<string, unknown> : {};
+    const detail = payload.error && typeof payload.error === 'object' && !Array.isArray(payload.error)
+      ? payload.error as Record<string, unknown> : {};
+    const code = typeof detail.code === 'string' && /^[\w-]{1,40}$/.test(detail.code)
+      ? detail.code : undefined;
+    const type = typeof detail.error_type === 'string' && /^[\w-]{1,40}$/.test(detail.error_type)
+      ? detail.error_type : undefined;
+    const reason = this.providerMessage(detail.message ?? payload.message);
+    const stage = this.operation(path);
+    this.logger.warn(`Pesapal ${stage} rejected: HTTP ${status}, code ${code ?? 'none'}, type ${type ?? 'none'}, reason ${reason ?? 'not provided'}`);
+    throw new BadGatewayException(`Pesapal ${stage} was rejected${code ? ` (${code})` : ` (HTTP ${status})`}. Check the backend payment logs for details`);
+  }
 
   private async request<T>(path: string, init: RequestInit): Promise<T> {
     let response: Response;
@@ -36,19 +71,25 @@ export class PesapalClient {
         signal: AbortSignal.timeout(20_000),
       });
     } catch {
-      throw new BadGatewayException('Pesapal is not responding. Please try again shortly');
+      throw new BadGatewayException(`Pesapal ${this.operation(path)} is not responding. Please try again shortly`);
     }
-    if (!response.ok) throw new BadGatewayException('Pesapal could not process this request');
+    let body: T & { error?: unknown };
     try {
-      const body = await response.json() as T & { error?: unknown };
-      if (body && !Array.isArray(body) && body.error) {
-        throw new BadGatewayException('Pesapal rejected this request');
-      }
-      return body;
-    } catch (error) {
-      if (error instanceof BadGatewayException) throw error;
+      body = await response.json() as T & { error?: unknown };
+    } catch {
+      this.logger.warn(`Pesapal ${this.operation(path)} returned invalid JSON: HTTP ${response.status}`);
       throw new BadGatewayException('Pesapal returned an invalid response');
     }
+    const providerError = body && !Array.isArray(body) ? body.error : undefined;
+    const hasProviderError = typeof providerError === 'string' && providerError.trim().length > 0
+      || Boolean(providerError && typeof providerError === 'object'
+        && Object.values(providerError).some(value => value !== null && value !== undefined && value !== ''));
+    const providerStatus = body && !Array.isArray(body) && 'status' in body
+      ? String(body.status) : undefined;
+    if (!response.ok || hasProviderError || providerStatus && providerStatus !== '200') {
+      this.rejected(path, response.status, body);
+    }
+    return body;
   }
 
   private async token(): Promise<string> {

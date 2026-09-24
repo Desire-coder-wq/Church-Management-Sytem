@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { Logger } from '@nestjs/common';
 import { PesapalClient } from './pesapal.client';
 
 describe('PesapalClient live API contract', () => {
@@ -29,5 +30,26 @@ describe('PesapalClient live API contract', () => {
     }) } as Response)) as typeof fetch;
     const client = new PesapalClient(config);
     await expect(client.submitOrder({ reference: 'CPM-123', amount: 1, description: 'Pledge', phone: '+256700000000', firstName: 'A', lastName: 'B', callbackUrl: 'https://example.com/callback', ipnUrl: 'https://example.com/ipn' })).rejects.toThrow('unexpected checkout address');
+  });
+
+  it('identifies a provider rejection without exposing credentials to the browser', async () => {
+    const privateConfig = { get: (key: string) => ({ PESAPAL_CONSUMER_KEY: 'private-key', PESAPAL_CONSUMER_SECRET: 'private-secret' })[key] } as ConfigService;
+    const warning = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    global.fetch = jest.fn(async () => ({ ok: false, status: 401, json: async () => ({
+      error: { error_type: 'authentication_error', code: 'invalid_key', message: 'Rejected private-key' },
+    }) } as Response)) as typeof fetch;
+    const client = new PesapalClient(privateConfig);
+    await expect(client.getStatus('tracking')).rejects.toThrow('Pesapal authentication was rejected (invalid_key)');
+    expect(JSON.stringify(warning.mock.calls)).not.toContain('private-key');
+    expect(JSON.stringify(warning.mock.calls)).not.toContain('private-secret');
+  });
+
+  it('accepts an empty Pesapal error object on a successful response', async () => {
+    global.fetch = jest.fn(async () => ({ ok: true, status: 200, json: async () => ({
+      token: 'access', expiryDate: new Date(Date.now() + 120000).toISOString(),
+      error: { error_type: null, code: null, message: null },
+    }) } as Response)) as typeof fetch;
+    const client = new PesapalClient(config);
+    await expect(client.getStatus('tracking')).resolves.toHaveProperty('token', 'access');
   });
 });
